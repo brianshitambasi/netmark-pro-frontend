@@ -11,6 +11,7 @@ import Goals from './pages/Goals';
 import Gallery from './pages/Gallery';
 import Calendar from './pages/Calendar';
 import Profile from './pages/Profile';
+import Prospects from './pages/Prospects';
 import Layout from './components/Layout';
 import './styles/App.css';
 
@@ -31,6 +32,7 @@ function App() {
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/prospects" element={<Prospects />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" />} />

@@ -9,7 +9,8 @@ import {
   FaImages, 
   FaCalendarAlt, 
   FaUser, 
-  FaSignOutAlt 
+  FaSignOutAlt,
+  FaChartLine
 } from 'react-icons/fa';
 
 function Layout() {
@@ -37,6 +38,9 @@ function Layout() {
               </NavLink>
               <NavLink to="/followups" className="nav-link btn-link">
                 <FaUsers className="me-1" /> Follow-ups
+              </NavLink>
+              <NavLink to="/prospects" className="nav-link btn-link">
+                <FaChartLine className="me-1" /> Prospects
               </NavLink>
               <NavLink to="/goals" className="nav-link btn-link">
                 <FaBullseye className="me-1" /> Goals
