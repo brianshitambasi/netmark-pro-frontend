@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Table, Button, Card, Modal, Form, Row, Col, Badge, InputGroup } from 'react-bootstrap';
-import { FaPlus, FaWhatsapp, FaCheck, FaTrash, FaSearch } from 'react-icons/fa';
+import { Table, Button, Card, Modal, Form, Row, Col, Badge, InputGroup, Dropdown } from 'react-bootstrap';
+import { FaPlus, FaWhatsapp, FaCheck, FaTrash, FaSearch, FaCalendarAlt, FaClock, FaHistory } from 'react-icons/fa';
 import { useFollowups } from '../hooks/useFollowups';
 import ConfirmationModal from '../components/ConfirmationModal';
+import toast from 'react-hot-toast';
+import moment from 'moment';
 
 function Followups() {
   const {
@@ -12,12 +14,20 @@ function Followups() {
     deleteFollowup,
     whatsappClick,
     markFollowed,
+    updateFollowup,
   } = useFollowups();
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedFollowup, setSelectedFollowup] = useState(null);
   const [search, setSearch] = useState('');
+  const [rescheduleData, setRescheduleData] = useState({
+    nextCallDate: '',
+    reason: '',
+    daysToAdd: ''
+  });
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -41,12 +51,91 @@ function Followups() {
     }
   };
 
-  const handleWhatsApp = async (id) => {
+  const handleReschedule = async () => {
+    if (!selectedId) return;
+    
+    try {
+      let response;
+      if (rescheduleData.daysToAdd) {
+        // Quick reschedule by adding days
+        response = await fetch(`${process.env.REACT_APP_API_URL}/followups/${selectedId}/quick-reschedule`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ option: rescheduleData.daysToAdd })
+        });
+      } else {
+        // Custom date reschedule
+        response = await fetch(`${process.env.REACT_APP_API_URL}/followups/${selectedId}/reschedule`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            nextCallDate: rescheduleData.nextCallDate,
+            reason: rescheduleData.reason
+          })
+        });
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        setShowRescheduleModal(false);
+        setRescheduleData({ nextCallDate: '', reason: '', daysToAdd: '' });
+        window.location.reload(); // Refresh to show updated date
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error('Failed to reschedule');
+    }
+  };
+
+  const handleMarkFollowed = async (id, followup) => {
+    setSelectedId(id);
+    setSelectedFollowup(followup);
+    // Prompt for reschedule option
+    const days = window.prompt(
+      'Follow-up completed! Schedule next follow-up in:\n' +
+      'Enter number of days (1, 3, 7, 14, 30) or leave empty to not reschedule'
+    );
+    
+    if (days && !isNaN(parseInt(days))) {
+      await markFollowed(id, `Followed up and rescheduled in ${days} days`);
+      // Auto reschedule
+      await fetch(`${process.env.REACT_APP_API_URL}/followups/${id}/quick-reschedule`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          option: days === '1' ? 'tomorrow' : 
+                  days === '3' ? 'in_3_days' :
+                  days === '7' ? 'in_1_week' :
+                  days === '14' ? 'in_2_weeks' : 'in_1_month'
+        })
+      });
+      toast.success(`Next follow-up scheduled in ${days} days`);
+    } else {
+      await markFollowed(id, 'Followed up via app');
+    }
+    window.location.reload();
+  };
+
+  const handleWhatsApp = async (id, phone) => {
     await whatsappClick(id);
   };
 
-  const handleMarkFollowed = async (id) => {
-    await markFollowed(id, 'Followed up via app');
+  const openRescheduleModal = (id, followup) => {
+    setSelectedId(id);
+    setSelectedFollowup(followup);
+    setRescheduleData({ nextCallDate: followup.nextCallDate.split('T')[0], reason: '', daysToAdd: '' });
+    setShowRescheduleModal(true);
   };
 
   const getCategoryBadge = (category) => {
@@ -69,10 +158,22 @@ function Followups() {
     return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
   };
 
+  const isOverdue = (date) => {
+    return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
+  };
+
   const filteredFollowups = followups.filter(f =>
     f.name.toLowerCase().includes(search.toLowerCase()) ||
     f.phone.includes(search)
   );
+
+  const quickRescheduleOptions = [
+    { value: 'tomorrow', label: 'Tomorrow (+1 day)', days: 1 },
+    { value: 'in_3_days', label: 'In 3 days', days: 3 },
+    { value: 'in_1_week', label: 'In 1 week', days: 7 },
+    { value: 'in_2_weeks', label: 'In 2 weeks', days: 14 },
+    { value: 'in_1_month', label: 'In 1 month', days: 30 }
+  ];
 
   if (loading) {
     return (
@@ -115,34 +216,61 @@ function Followups() {
                   <th>Category</th>
                   <th>Next Call Date</th>
                   <th>Status</th>
+                  <th>Follow-ups</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredFollowups.map((followup) => (
-                  <tr key={followup._id}>
-                    <td><strong>{followup.name}</strong></td>
+                  <tr key={followup._id} className={isOverdue(followup.nextCallDate) ? 'table-danger' : ''}>
+                    <td>
+                      <strong>{followup.name}</strong>
+                      {followup.notes && <br /><small className="text-muted">{followup.notes.substring(0, 30)}</small>}
+                    </td>
                     <td>{followup.phone}</td>
                     <td>{getCategoryBadge(followup.category)}</td>
-                    <td>{new Date(followup.nextCallDate).toLocaleDateString()}</td>
+                    <td>
+                      <div className="d-flex align-items-center">
+                        <FaCalendarAlt className="me-2 text-muted" />
+                        {new Date(followup.nextCallDate).toLocaleDateString()}
+                        {isOverdue(followup.nextCallDate) && (
+                          <Badge bg="danger" className="ms-2">Overdue</Badge>
+                        )}
+                      </div>
+                    </td>
                     <td>{getStatusBadge(followup.status)}</td>
+                    <td>
+                      <Badge bg="secondary" className="me-1">
+                        <FaHistory className="me-1" /> {followup.followupCount || 0}
+                      </Badge>
+                    </td>
                     <td>
                       <Button
                         variant="success"
                         size="sm"
-                        className="me-2"
-                        onClick={() => handleWhatsApp(followup._id)}
+                        className="me-1"
+                        onClick={() => handleWhatsApp(followup._id, followup.phone)}
                       >
                         <FaWhatsapp />
                       </Button>
                       <Button
                         variant="info"
                         size="sm"
-                        className="me-2"
-                        onClick={() => handleMarkFollowed(followup._id)}
-                        disabled={followup.status !== 'pending'}
+                        className="me-1"
+                        onClick={() => handleMarkFollowed(followup._id, followup)}
+                        disabled={followup.status !== 'pending' && followup.status !== 'followed'}
+                        title="Mark as followed"
                       >
                         <FaCheck />
+                      </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        className="me-1"
+                        onClick={() => openRescheduleModal(followup._id, followup)}
+                        title="Reschedule"
+                      >
+                        <FaClock />
                       </Button>
                       <Button
                         variant="danger"
@@ -235,6 +363,70 @@ function Followups() {
             <Button variant="primary" type="submit">Create</Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal show={showRescheduleModal} onHide={() => setShowRescheduleModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title><FaClock className="me-2" />Reschedule Follow-up</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p><strong>Prospect:</strong> {selectedFollowup?.name}</p>
+          <p><strong>Current Date:</strong> {selectedFollowup && new Date(selectedFollowup.nextCallDate).toLocaleDateString()}</p>
+          
+          <Form.Group className="mb-3">
+            <Form.Label>Quick Reschedule Options</Form.Label>
+            <div className="d-grid gap-2">
+              {quickRescheduleOptions.map(option => (
+                <Button
+                  key={option.value}
+                  variant="outline-primary"
+                  onClick={() => {
+                    setRescheduleData({ ...rescheduleData, daysToAdd: option.value, nextCallDate: '' });
+                    setTimeout(handleReschedule, 100);
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </Form.Group>
+
+          <hr />
+
+          <Form.Group className="mb-3">
+            <Form.Label>Or Select Custom Date</Form.Label>
+            <Form.Control
+              type="date"
+              value={rescheduleData.nextCallDate}
+              onChange={(e) => setRescheduleData({ ...rescheduleData, nextCallDate: e.target.value, daysToAdd: '' })}
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Reason (Optional)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={rescheduleData.reason}
+              onChange={(e) => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+              placeholder="Why are you rescheduling?"
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRescheduleModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleReschedule}
+            disabled={!rescheduleData.nextCallDate && !rescheduleData.daysToAdd}
+          >
+            Confirm Reschedule
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Delete Confirmation Modal */}
