@@ -78,162 +78,188 @@ function ProspectForm({ show, onHide, onProspectAdded }) {
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton>
         <Modal.Title><FaUserPlus className="me-2" />Add New Prospect</Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
-        <Modal.Body>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {error && <Alert variant="danger">{error}</Alert>}
           
-          <h6 className="mb-3"><FaUserPlus className="me-2" />Basic Information</h6>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Full Name *</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Phone Number *</Form.Label>
-                <Form.Control
-                  type="tel"
-                  name="phone"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="254712345678"
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Alternative Phone</Form.Label>
-                <Form.Control
-                  type="tel"
-                  name="alternativePhone"
-                  value={formData.alternativePhone}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
+          {/* Basic Information */}
+          <div className="mb-4">
+            <h6 className="mb-3 text-primary"><FaUserPlus className="me-2" />Basic Information</h6>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Full Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter full name"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Phone Number *</Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="phone"
+                    required
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="254712345678"
+                  />
+                  <Form.Text className="text-muted">Include country code</Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="email@example.com"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Alternative Phone</Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="alternativePhone"
+                    value={formData.alternativePhone}
+                    onChange={handleChange}
+                    placeholder="Alternative contact"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </div>
 
-          <h6 className="mb-3"><FaMapMarkerAlt className="me-2" />Location Information</h6>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>City/Town</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="location.city"
-                  value={formData.location.city}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Landmark</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="location.landmark"
-                  value={formData.location.landmark}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Address</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="location.address"
-                  value={formData.location.address}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
+          {/* Location Information */}
+          <div className="mb-4">
+            <h6 className="mb-3 text-primary"><FaMapMarkerAlt className="me-2" />Location Information</h6>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>City/Town</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="location.city"
+                    value={formData.location.city}
+                    onChange={handleChange}
+                    placeholder="Nairobi"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Landmark</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="location.landmark"
+                    value={formData.location.landmark}
+                    onChange={handleChange}
+                    placeholder="Near mall"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Address</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="location.address"
+                    value={formData.location.address}
+                    onChange={handleChange}
+                    placeholder="Street address"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </div>
 
-          <h6 className="mb-3"><FaBriefcase className="me-2" />Professional Information</h6>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Occupation</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="occupation"
-                  value={formData.occupation}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Source</Form.Label>
-                <Form.Select name="source" value={formData.source} onChange={handleChange}>
-                  <option value="referral">Referral</option>
-                  <option value="social_media">Social Media</option>
-                  <option value="event">Event</option>
-                  <option value="cold_call">Cold Call</option>
-                  <option value="website">Website</option>
-                  <option value="other">Other</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
+          {/* Professional Information */}
+          <div className="mb-4">
+            <h6 className="mb-3 text-primary"><FaBriefcase className="me-2" />Professional Information</h6>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Occupation</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="occupation"
+                    value={formData.occupation}
+                    onChange={handleChange}
+                    placeholder="Business, Student, etc."
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Source</Form.Label>
+                  <Form.Select name="source" value={formData.source} onChange={handleChange}>
+                    <option value="referral">Referral</option>
+                    <option value="social_media">Social Media</option>
+                    <option value="event">Event</option>
+                    <option value="cold_call">Cold Call</option>
+                    <option value="website">Website</option>
+                    <option value="other">Other</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+          </div>
 
-          <h6 className="mb-3"><FaHeart className="me-2" />Interest Information</h6>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Interest Level (1-10)</Form.Label>
-                <Form.Range
-                  name="interestLevel"
-                  min="1"
-                  max="10"
-                  value={formData.interestLevel}
-                  onChange={handleChange}
-                />
-                <div className="text-center">{formData.interestLevel}/10</div>
-              </Form.Group>
-            </Col>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Notes</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Any additional information about this prospect..."
-                />
-              </Form.Group>
-            </Col>
-          </Row>
+          {/* Interest Information */}
+          <div className="mb-4">
+            <h6 className="mb-3 text-primary"><FaHeart className="me-2" />Interest Information</h6>
+            <Row>
+              <Col md={12}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Interest Level: {formData.interestLevel}/10</Form.Label>
+                  <Form.Range
+                    name="interestLevel"
+                    min="1"
+                    max="10"
+                    value={formData.interestLevel}
+                    onChange={handleChange}
+                  />
+                  <div className="d-flex justify-content-between small text-muted">
+                    <span>Low</span>
+                    <span>Medium</span>
+                    <span>High</span>
+                  </div>
+                </Form.Group>
+              </Col>
+              <Col md={12}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Notes</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleChange}
+                    placeholder="Any additional information about this prospect..."
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>Cancel</Button>
+          <Button variant="secondary" onClick={onHide}>
+            Cancel
+          </Button>
           <Button variant="primary" type="submit" disabled={loading}>
             {loading ? 'Adding...' : 'Add Prospect'}
           </Button>
