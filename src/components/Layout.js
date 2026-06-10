@@ -54,7 +54,7 @@ function Layout() {
             </Nav>
             <Nav>
               <NavDropdown title={<><FaUser className="me-1" /> {user?.name || 'User'}</>} align="end">
-                <NavDropdown.Item href="/profile">
+                <NavDropdown.Item as={NavLink} to="/profile">
                   <FaUser className="me-2" /> Profile
                 </NavDropdown.Item>
                 <NavDropdown.Divider />
