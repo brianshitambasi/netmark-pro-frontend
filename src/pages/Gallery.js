@@ -39,12 +39,22 @@ function Gallery() {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
+  const cleanupAudio = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+    }
+  };
+
   useEffect(() => {
     loadMedia();
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      cleanupAudio();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadMedia = async () => {
@@ -281,7 +291,6 @@ function Gallery() {
 
   return (
     <div className="fade-in">
-      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
           <h2><FaImage className="me-2 text-primary" />Media Gallery</h2>
@@ -304,126 +313,44 @@ function Gallery() {
         </div>
       </div>
 
-      {/* Stats Row */}
       <Row className="g-3 mb-4">
         <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <FaImage size={24} className="text-primary mb-2" />
-              <h4 className="mb-0">{media.filter(m => m.type === 'image').length}</h4>
-              <small className="text-muted">Photos</small>
-            </Card.Body>
-          </Card>
+          <Card className="border-0 shadow-sm"><Card.Body className="text-center"><FaImage size={24} className="text-primary mb-2" /><h4 className="mb-0">{media.filter(m => m.type === 'image').length}</h4><small className="text-muted">Photos</small></Card.Body></Card>
         </Col>
         <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <FaVideo size={24} className="text-danger mb-2" />
-              <h4 className="mb-0">{media.filter(m => m.type === 'video').length}</h4>
-              <small className="text-muted">Videos</small>
-            </Card.Body>
-          </Card>
+          <Card className="border-0 shadow-sm"><Card.Body className="text-center"><FaVideo size={24} className="text-danger mb-2" /><h4 className="mb-0">{media.filter(m => m.type === 'video').length}</h4><small className="text-muted">Videos</small></Card.Body></Card>
         </Col>
         <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <FaFileAudio size={24} className="text-success mb-2" />
-              <h4 className="mb-0">{media.filter(m => m.type === 'audio').length}</h4>
-              <small className="text-muted">Voice Notes</small>
-            </Card.Body>
-          </Card>
+          <Card className="border-0 shadow-sm"><Card.Body className="text-center"><FaFileAudio size={24} className="text-success mb-2" /><h4 className="mb-0">{media.filter(m => m.type === 'audio').length}</h4><small className="text-muted">Voice Notes</small></Card.Body></Card>
         </Col>
         <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <FaFolder size={24} className="text-warning mb-2" />
-              <h4 className="mb-0">{categories.length - 1}</h4>
-              <small className="text-muted">Categories</small>
-            </Card.Body>
-          </Card>
+          <Card className="border-0 shadow-sm"><Card.Body className="text-center"><FaFolder size={24} className="text-warning mb-2" /><h4 className="mb-0">{categories.length - 1}</h4><small className="text-muted">Categories</small></Card.Body></Card>
         </Col>
       </Row>
 
-      {/* Filters */}
       <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
           <Row className="g-3">
-            <Col md={5}>
-              <InputGroup>
-                <InputGroup.Text><FaSearch /></InputGroup.Text>
-                <Form.Control
-                  placeholder="Search by title..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </InputGroup>
-            </Col>
-            <Col md={4}>
-              <InputGroup>
-                <InputGroup.Text><FaFilter /></InputGroup.Text>
-                <Form.Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-                  {categories.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-                  ))}
-                </Form.Select>
-              </InputGroup>
-            </Col>
-            <Col md={3}>
-              <div className="d-flex gap-2">
-                <Button 
-                  variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'}
-                  onClick={() => setViewMode('grid')}
-                >
-                  <FaTh />
-                </Button>
-                <Button 
-                  variant={viewMode === 'list' ? 'primary' : 'outline-secondary'}
-                  onClick={() => setViewMode('list')}
-                >
-                  <FaList />
-                </Button>
-                <Button variant="outline-secondary" onClick={loadMedia}>
-                  Refresh
-                </Button>
-              </div>
-            </Col>
+            <Col md={5}><InputGroup><InputGroup.Text><FaSearch /></InputGroup.Text><Form.Control placeholder="Search by title..." value={search} onChange={(e) => setSearch(e.target.value)} /></InputGroup></Col>
+            <Col md={4}><InputGroup><InputGroup.Text><FaFilter /></InputGroup.Text><Form.Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>{categories.map(cat => (<option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>))}</Form.Select></InputGroup></Col>
+            <Col md={3}><div className="d-flex gap-2"><Button variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'} onClick={() => setViewMode('grid')}><FaTh /></Button><Button variant={viewMode === 'list' ? 'primary' : 'outline-secondary'} onClick={() => setViewMode('list')}><FaList /></Button><Button variant="outline-secondary" onClick={loadMedia}>Refresh</Button></div></Col>
           </Row>
         </Card.Body>
       </Card>
 
-      {/* Media Grid/List View */}
       {viewMode === 'grid' ? (
         <Row>
           {filteredMedia.length === 0 ? (
-            <Col xs={12}>
-              <div className="text-center py-5">
-                <FaImage className="fa-3x text-muted mb-3" />
-                <h5 className="text-muted">No Media Found</h5>
-                <p className="text-muted">Upload photos, videos, or record voice notes</p>
-              </div>
-            </Col>
+            <Col xs={12}><div className="text-center py-5"><FaImage className="fa-3x text-muted mb-3" /><h5 className="text-muted">No Media Found</h5><p className="text-muted">Upload photos, videos, or record voice notes</p></div></Col>
           ) : (
             filteredMedia.map((item) => (
               <Col md={4} lg={3} key={item._id} className="mb-4">
                 <Card className="h-100 shadow-sm border-0">
                   <div className="position-relative">
                     {item.type === 'image' ? (
-                      <img
-                        src={item.url}
-                        className="card-img-top"
-                        alt={item.title}
-                        style={{ height: '200px', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/300x200?text=Image+Error';
-                        }}
-                      />
+                      <img src={item.url} className="card-img-top" alt={item.title} style={{ height: '200px', objectFit: 'cover' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=Image+Error'; }} />
                     ) : item.type === 'video' ? (
-                      <video
-                        src={item.url}
-                        className="card-img-top"
-                        style={{ height: '200px', objectFit: 'cover' }}
-                        controls
-                      />
+                      <video src={item.url} className="card-img-top" style={{ height: '200px', objectFit: 'cover' }} controls />
                     ) : (
                       <div className="d-flex align-items-center justify-content-center bg-light" style={{ height: '200px' }}>
                         <div className="text-center">
@@ -433,34 +360,13 @@ function Gallery() {
                         </div>
                       </div>
                     )}
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="position-absolute top-0 end-0 m-2"
-                      onClick={() => {
-                        setSelectedItem(item);
-                        setShowDeleteModal(true);
-                      }}
-                    >
-                      <FaTrash />
-                    </Button>
-                    <div className="position-absolute bottom-0 start-0 m-2">
-                      <Badge bg="dark" className="opacity-75">
-                        {getCategoryIcon(item.category)} {item.category}
-                      </Badge>
-                    </div>
+                    <Button variant="danger" size="sm" className="position-absolute top-0 end-0 m-2" onClick={() => { setSelectedItem(item); setShowDeleteModal(true); }}><FaTrash /></Button>
+                    <div className="position-absolute bottom-0 start-0 m-2"><Badge bg="dark" className="opacity-75">{getCategoryIcon(item.category)} {item.category}</Badge></div>
                   </div>
                   <Card.Body>
                     <Card.Title className="fs-6">{item.title}</Card.Title>
-                    <Card.Text className="small text-muted">
-                      {getMediaIcon(item.type)} {item.type}
-                      {item.duration && ` ‚Ä¢ ${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`}
-                    </Card.Text>
-                    {item.description && (
-                      <Card.Text className="small text-muted">
-                        {item.description.substring(0, 50)}...
-                      </Card.Text>
-                    )}
+                    <Card.Text className="small text-muted">{getMediaIcon(item.type)} {item.type}{item.duration && ` ‚Ä¢ ${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`}</Card.Text>
+                    {item.description && <Card.Text className="small text-muted">{item.description.substring(0, 50)}...</Card.Text>}
                   </Card.Body>
                 </Card>
               </Col>
@@ -471,51 +377,16 @@ function Gallery() {
         <Card className="border-0 shadow-sm">
           <div className="table-responsive">
             <Table hover className="mb-0">
-              <thead className="bg-light">
-                <tr>
-                  <th>Media</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+              <thead className="bg-light"><tr><th>Media</th><th>Title</th><th>Category</th><th>Type</th><th>Date</th><th>Actions</th></tr></thead>
               <tbody>
                 {filteredMedia.map((item) => (
                   <tr key={item._id}>
-                    <td className="align-middle">
-                      {item.type === 'image' ? (
-                        <img src={item.url} alt={item.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
-                      ) : item.type === 'video' ? (
-                        <FaVideo size={40} className="text-danger" />
-                      ) : (
-                        <FaFileAudio size={40} className="text-success" />
-                      )}
-                    </td>
-                    <td className="align-middle">
-                      <strong>{item.title}</strong>
-                      {item.description && (
-                        <>
-                          <br />
-                          <small className="text-muted">{item.description.substring(0, 50)}</small>
-                        </>
-                      )}
-                    </td>
-                    <td className="align-middle">
-                      <Badge bg="secondary">{item.category}</Badge>
-                    </td>
-                    <td className="align-middle">
-                      {getMediaIcon(item.type)} {item.type}
-                    </td>
-                    <td className="align-middle">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="align-middle">
-                      <Button variant="danger" size="sm" onClick={() => { setSelectedItem(item); setShowDeleteModal(true); }}>
-                        <FaTrash />
-                      </Button>
-                    </td>
+                    <td className="align-middle">{item.type === 'image' ? <img src={item.url} alt={item.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} /> : item.type === 'video' ? <FaVideo size={40} className="text-danger" /> : <FaFileAudio size={40} className="text-success" />}</td>
+                    <td className="align-middle"><strong>{item.title}</strong>{item.description && <><br /><small className="text-muted">{item.description.substring(0, 50)}</small></>}</td>
+                    <td className="align-middle"><Badge bg="secondary">{item.category}</Badge></td>
+                    <td className="align-middle">{getMediaIcon(item.type)} {item.type}</td>
+                    <td className="align-middle">{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td className="align-middle"><Button variant="danger" size="sm" onClick={() => { setSelectedItem(item); setShowDeleteModal(true); }}><FaTrash /></Button></td>
                   </tr>
                 ))}
               </tbody>
@@ -524,178 +395,51 @@ function Gallery() {
         </Card>
       )}
 
-      {/* Upload Modal - Photo/Video */}
+      {/* Upload Modal */}
       <Modal show={showModal} onHide={() => { setShowModal(false); resetForm(); }} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title><FaUpload className="me-2" />Upload Photo/Video</Modal.Title>
-        </Modal.Header>
+        <Modal.Header closeButton><Modal.Title><FaUpload className="me-2" />Upload Photo/Video</Modal.Title></Modal.Header>
         <Form onSubmit={handleFileUpload}>
           <Modal.Body>
             {error && <Alert variant="danger">{error}</Alert>}
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Title *</Form.Label>
-              <Form.Control
-                type="text"
-                required
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Category</Form.Label>
-              <Form.Select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <option value="testimonial">Ì≥ù Testimonial</option>
-                <option value="event">Ìæâ Event</option>
-                <option value="training">ÔøΩÔøΩ Training</option>
-                <option value="product_demo">Ì≥¶ Product Demo</option>
-                <option value="team_photo">Ì±• Team Photo</option>
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>File (Image or Video)</Form.Label>
-              <Form.Control
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-                required
-              />
-              <Form.Text className="text-muted">
-                Supported: JPG, PNG, GIF, MP4, MOV, AVI (Max 500MB)
-              </Form.Text>
-            </Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Title *</Form.Label><Form.Control type="text" required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} /></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}><option value="testimonial">Ì≥ù Testimonial</option><option value="event">Ìæâ Event</option><option value="training">Ì≥ö Training</option><option value="product_demo">Ì≥¶ Product Demo</option><option value="team_photo">Ì±• Team Photo</option></Form.Select></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Description</Form.Label><Form.Control as="textarea" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>File (Image or Video)</Form.Label><Form.Control type="file" accept="image/*,video/*" onChange={(e) => setSelectedFile(e.target.files[0])} required /><Form.Text className="text-muted">Supported: JPG, PNG, GIF, MP4, MOV, AVI (Max 500MB)</Form.Text></Form.Group>
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={uploading}>
-              {uploading ? 'Uploading...' : 'Upload'}
-            </Button>
-          </Modal.Footer>
+          <Modal.Footer><Button variant="secondary" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Button><Button variant="primary" type="submit" disabled={uploading}>{uploading ? 'Uploading...' : 'Upload'}</Button></Modal.Footer>
         </Form>
       </Modal>
 
-      {/* Voice Note Recording Modal */}
+      {/* Voice Note Modal */}
       <Modal show={showVoiceModal} onHide={() => { setShowVoiceModal(false); resetVoiceForm(); }} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title><FaMicrophone className="me-2" />Record Voice Note</Modal.Title>
-        </Modal.Header>
+        <Modal.Header closeButton><Modal.Title><FaMicrophone className="me-2" />Record Voice Note</Modal.Title></Modal.Header>
         <Modal.Body>
           <div className="text-center py-4">
             {!audioBlob ? (
               <div>
-                {!recording ? (
-                  <Button variant="danger" size="lg" onClick={startRecording} className="rounded-circle p-4">
-                    <FaMicrophone size={40} />
-                  </Button>
-                ) : (
-                  <div>
-                    <Button variant="secondary" size="lg" onClick={stopRecording} className="rounded-circle p-4">
-                      <FaStop size={40} />
-                    </Button>
-                    <p className="mt-3 text-danger">
-                      <span className="badge bg-danger p-2">Recording... {formatTime(recordingTime)}</span>
-                    </p>
-                  </div>
-                )}
-                <p className="mt-3 text-muted">
-                  {!recording ? 'Click to start recording' : 'Click stop when done'}
-                </p>
+                {!recording ? <Button variant="danger" size="lg" onClick={startRecording} className="rounded-circle p-4"><FaMicrophone size={40} /></Button> : <div><Button variant="secondary" size="lg" onClick={stopRecording} className="rounded-circle p-4"><FaStop size={40} /></Button><p className="mt-3 text-danger"><span className="badge bg-danger p-2">Recording... {formatTime(recordingTime)}</span></p></div>}
+                <p className="mt-3 text-muted">{!recording ? 'Click to start recording' : 'Click stop when done'}</p>
               </div>
             ) : (
               <div>
-                <div className="mb-4">
-                  <audio ref={audioRef} src={audioUrl} controls className="w-100" />
-                  <div className="mt-2">
-                    <Button variant="primary" size="sm" onClick={playAudio}>
-                      <FaPlay className="me-1" /> Play
-                    </Button>
-                    <Button variant="secondary" size="sm" onClick={pauseAudio} className="ms-2">
-                      <FaPause className="me-1" /> Pause
-                    </Button>
-                  </div>
-                </div>
-                <Button variant="danger" size="sm" onClick={() => { resetVoiceForm(); }}>
-                  <FaTimes className="me-1" /> Re-record
-                </Button>
+                <div className="mb-4"><audio ref={audioRef} src={audioUrl} controls className="w-100" /><div className="mt-2"><Button variant="primary" size="sm" onClick={playAudio}><FaPlay className="me-1" /> Play</Button><Button variant="secondary" size="sm" onClick={pauseAudio} className="ms-2"><FaPause className="me-1" /> Pause</Button></div></div>
+                <Button variant="danger" size="sm" onClick={() => { resetVoiceForm(); }}><FaTimes className="me-1" /> Re-record</Button>
               </div>
             )}
           </div>
-
           <hr />
-
-          <Form.Group className="mb-3">
-            <Form.Label>Title *</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Enter title for voice note"
-              disabled={!audioBlob}
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Category</Form.Label>
-            <Form.Select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              disabled={!audioBlob}
-            >
-              <option value="testimonial">Ì≥ù Testimonial</option>
-              <option value="event">Ìæâ Event</option>
-              <option value="training">Ì≥ö Training</option>
-              <option value="product_demo">Ì≥¶ Product Demo</option>
-              <option value="team_photo">Ì±• Team Photo</option>
-            </Form.Select>
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Description</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Optional description..."
-              disabled={!audioBlob}
-            />
-          </Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Title *</Form.Label><Form.Control type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Enter title for voice note" disabled={!audioBlob} /></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} disabled={!audioBlob}><option value="testimonial">Ì≥ù Testimonial</option><option value="event">Ìæâ Event</option><option value="training">Ì≥ö Training</option><option value="product_demo">Ì≥¶ Product Demo</option><option value="team_photo">Ì±• Team Photo</option></Form.Select></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Description</Form.Label><Form.Control as="textarea" rows={2} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Optional description..." disabled={!audioBlob} /></Form.Group>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => { setShowVoiceModal(false); resetVoiceForm(); }}>Cancel</Button>
-          <Button variant="success" onClick={uploadVoiceNote} disabled={!audioBlob || uploading}>
-            {uploading ? 'Uploading...' : 'Save Voice Note'}
-          </Button>
-        </Modal.Footer>
+        <Modal.Footer><Button variant="secondary" onClick={() => { setShowVoiceModal(false); resetVoiceForm(); }}>Cancel</Button><Button variant="success" onClick={uploadVoiceNote} disabled={!audioBlob || uploading}>{uploading ? 'Uploading...' : 'Save Voice Note'}</Button></Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete Media</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete "{selectedItem?.title}"? This action cannot be undone.
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-          <Button variant="danger" onClick={handleDelete}>Delete</Button>
-        </Modal.Footer>
+        <Modal.Header closeButton><Modal.Title>Delete Media</Modal.Title></Modal.Header>
+        <Modal.Body>Are you sure you want to delete "{selectedItem?.title}"? This action cannot be undone.</Modal.Body>
+        <Modal.Footer><Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button><Button variant="danger" onClick={handleDelete}>Delete</Button></Modal.Footer>
       </Modal>
     </div>
   );
