@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://netmark-pro-backend.onrender.com/api';
 
-function StageManager({ show, onHide, prospect, onUpdate }) {
+const StageManager = ({ show, onHide, prospect, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedStage, setSelectedStage] = useState('lead');
@@ -50,8 +50,25 @@ function StageManager({ show, onHide, prospect, onUpdate }) {
 
     try {
       const token = localStorage.getItem('token');
-      const updateData = { pipelineStage: selectedStage, qualificationNotes, invitationDetails: { method: invitationMethod, eventName, eventDate, eventLink }, enrollmentDetails: { package: packageSelected, amount: parseFloat(amount) || 0, sponsorName, accountNumber } };
-      const response = await axios.put(`${API_URL}/prospects/${prospect._id}`, updateData, { headers: { Authorization: `Bearer ${token}` } });
+      const updateData = { 
+        pipelineStage: selectedStage, 
+        qualificationNotes, 
+        invitationDetails: { 
+          method: invitationMethod, 
+          eventName, 
+          eventDate, 
+          eventLink 
+        }, 
+        enrollmentDetails: { 
+          package: packageSelected, 
+          amount: parseFloat(amount) || 0, 
+          sponsorName, 
+          accountNumber 
+        } 
+      };
+      const response = await axios.put(`${API_URL}/prospects/${prospect._id}`, updateData, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
       if (response.data.success) {
         toast.success(`Prospect moved to ${stages.find(s => s.value === selectedStage)?.label} stage`);
         if (onUpdate) onUpdate();
@@ -72,20 +89,151 @@ function StageManager({ show, onHide, prospect, onUpdate }) {
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton><Modal.Title><FaRocket className="me-2 text-primary" />Update Pipeline - {prospect.name}</Modal.Title></Modal.Header>
+      <Modal.Header closeButton>
+        <Modal.Title><FaRocket className="me-2 text-primary" />Update Pipeline - {prospect.name}</Modal.Title>
+      </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger">{error}</Alert>}
-        <div className="mb-4"><label className="fw-bold mb-2">Select Pipeline Stage:</label><div className="d-flex flex-wrap gap-2">{stages.map((stage) => (<Button key={stage.value} variant={selectedStage === stage.value ? stage.color : 'outline-secondary'} size="sm" onClick={() => setSelectedStage(stage.value)}>{stage.icon} {stage.label}</Button>))}</div></div>
-        <div className="mb-3"><Badge bg={currentStage?.color} className="fs-6 p-2">{currentStage?.icon} Current: {currentStage?.label}</Badge></div>
+        <div className="mb-4">
+          <label className="fw-bold mb-2">Select Pipeline Stage:</label>
+          <div className="d-flex flex-wrap gap-2">
+            {stages.map((stage) => (
+              <Button 
+                key={stage.value} 
+                variant={selectedStage === stage.value ? stage.color : 'outline-secondary'} 
+                size="sm" 
+                onClick={() => setSelectedStage(stage.value)}
+              >
+                {stage.icon} {stage.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="mb-3">
+          <Badge bg={currentStage?.color} className="fs-6 p-2">
+            {currentStage?.icon} Current: {currentStage?.label}
+          </Badge>
+        </div>
         <hr />
-        {(selectedStage === 'qualified' || selectedStage === 'invited' || selectedStage === 'presented' || selectedStage === 'negotiation' || selectedStage === 'enrolled') && (<div className="mb-3"><label className="fw-bold mb-2">Qualification Notes</label><Form.Control as="textarea" rows={2} value={qualificationNotes} onChange={(e) => setQualificationNotes(e.target.value)} placeholder="Why is this prospect qualified?" /></div>)}
-        {(selectedStage === 'invited' || selectedStage === 'presented' || selectedStage === 'negotiation' || selectedStage === 'enrolled') && (<div className="mb-3"><label className="fw-bold mb-2">Invitation Details</label><Row><Col md={6}><Form.Select value={invitationMethod} onChange={(e) => setInvitationMethod(e.target.value)} className="mb-2"><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="call">Phone Call</option><option value="in_person">In Person</option></Form.Select></Col><Col md={6}><Form.Control type="text" placeholder="Event Name" value={eventName} onChange={(e) => setEventName(e.target.value)} className="mb-2" /></Col><Col md={6}><Form.Control type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="mb-2" /></Col><Col md={6}><Form.Control type="text" placeholder="Event Link (Zoom/Google Meet)" value={eventLink} onChange={(e) => setEventLink(e.target.value)} /></Col></Row></div>)}
-        {selectedStage === 'enrolled' && (<div className="mb-3"><label className="fw-bold mb-2">Enrollment Details</label><Row><Col md={6}><Form.Select value={packageSelected} onChange={(e) => setPackageSelected(e.target.value)} className="mb-2"><option value="">Select Package</option><option value="ENTRIVERSE">ENTRIVERSE - KSh 29,888</option><option value="NEOVERSE">NEOVERSE - KSh 42,000</option><option value="TECHNOVERSE">TECHNOVERSE - KSh 123,900</option><option value="DIGIVERSE">DIGIVERSE - KSh 254,200</option><option value="MEGAVERSE">MEGAVERSE - KSh 505,100</option></Form.Select></Col><Col md={6}><Form.Control type="number" placeholder="Amount Paid" value={amount} onChange={(e) => setAmount(e.target.value)} className="mb-2" /></Col><Col md={6}><Form.Control type="text" placeholder="Sponsor Name" value={sponsorName} onChange={(e) => setSponsorName(e.target.value)} className="mb-2" /></Col><Col md={6}><Form.Control type="text" placeholder="Account Number" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} /></Col></Row></div>)}
-        <Alert variant="info" className="mt-2 small"><strong>{currentStage?.label} Stage:</strong> {currentStage?.description}</Alert>
+        {(selectedStage === 'qualified' || selectedStage === 'invited' || selectedStage === 'presented' || selectedStage === 'negotiation' || selectedStage === 'enrolled') && (
+          <div className="mb-3">
+            <label className="fw-bold mb-2">Qualification Notes</label>
+            <Form.Control 
+              as="textarea" 
+              rows={2} 
+              value={qualificationNotes} 
+              onChange={(e) => setQualificationNotes(e.target.value)} 
+              placeholder="Why is this prospect qualified?" 
+            />
+          </div>
+        )}
+        {(selectedStage === 'invited' || selectedStage === 'presented' || selectedStage === 'negotiation' || selectedStage === 'enrolled') && (
+          <div className="mb-3">
+            <label className="fw-bold mb-2">Invitation Details</label>
+            <Row>
+              <Col md={6}>
+                <Form.Select 
+                  value={invitationMethod} 
+                  onChange={(e) => setInvitationMethod(e.target.value)} 
+                  className="mb-2"
+                >
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">Email</option>
+                  <option value="call">Phone Call</option>
+                  <option value="in_person">In Person</option>
+                </Form.Select>
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Event Name" 
+                  value={eventName} 
+                  onChange={(e) => setEventName(e.target.value)} 
+                  className="mb-2" 
+                />
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="date" 
+                  value={eventDate} 
+                  onChange={(e) => setEventDate(e.target.value)} 
+                  className="mb-2" 
+                />
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Event Link" 
+                  value={eventLink} 
+                  onChange={(e) => setEventLink(e.target.value)} 
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
+        {selectedStage === 'enrolled' && (
+          <div className="mb-3">
+            <label className="fw-bold mb-2">Enrollment Details</label>
+            <Row>
+              <Col md={6}>
+                <Form.Select 
+                  value={packageSelected} 
+                  onChange={(e) => setPackageSelected(e.target.value)} 
+                  className="mb-2"
+                >
+                  <option value="">Select Package</option>
+                  <option value="ENTRIVERSE">ENTRIVERSE - KSh 29,888</option>
+                  <option value="NEOVERSE">NEOVERSE - KSh 42,000</option>
+                  <option value="TECHNOVERSE">TECHNOVERSE - KSh 123,900</option>
+                  <option value="DIGIVERSE">DIGIVERSE - KSh 254,200</option>
+                  <option value="MEGAVERSE">MEGAVERSE - KSh 505,100</option>
+                </Form.Select>
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="number" 
+                  placeholder="Amount Paid" 
+                  value={amount} 
+                  onChange={(e) => setAmount(e.target.value)} 
+                  className="mb-2" 
+                />
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Sponsor Name" 
+                  value={sponsorName} 
+                  onChange={(e) => setSponsorName(e.target.value)} 
+                  className="mb-2" 
+                />
+              </Col>
+              <Col md={6}>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Account Number" 
+                  value={accountNumber} 
+                  onChange={(e) => setAccountNumber(e.target.value)} 
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
+        <Alert variant="info" className="mt-2 small">
+          <strong>{currentStage?.label} Stage:</strong> {currentStage?.description}
+        </Alert>
       </Modal.Body>
-      <Modal.Footer><Button variant="secondary" onClick={onHide}>Cancel</Button><Button variant={currentStage?.color} onClick={handleSubmit} disabled={loading}>{loading ? 'Updating...' : `Move to ${currentStage?.label}`}</Button></Modal.Footer>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>Cancel</Button>
+        <Button 
+          variant={currentStage?.color} 
+          onClick={handleSubmit} 
+          disabled={loading}
+        >
+          {loading ? 'Updating...' : `Move to ${currentStage?.label}`}
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
-}
+};
 
 export default StageManager;
