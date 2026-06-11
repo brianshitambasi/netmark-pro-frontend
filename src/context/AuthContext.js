@@ -15,24 +15,25 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    if (token) {
-      loadUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    checkAuth();
+  }, []);
 
-  const loadUser = async () => {
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await authService.getMe();
       setUser(response.data.data.user);
     } catch (error) {
-      console.error('Failed to load user:', error);
+      console.error('Auth check failed:', error);
       localStorage.removeItem('token');
-      setToken(null);
+      localStorage.removeItem('user');
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,6 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      setToken(token);
       setUser(user);
       toast.success('Login successful!');
       return { success: true };
@@ -61,7 +61,6 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      setToken(token);
       setUser(user);
       toast.success('Registration successful!');
       return { success: true };
@@ -75,20 +74,24 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setToken(null);
     setUser(null);
     toast.success('Logged out successfully');
   };
 
-  const value = {
-    user,
-    token,
-    loading,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!token,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!localStorage.getItem('token'),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+export default AuthContext;
