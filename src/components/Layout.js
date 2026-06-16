@@ -27,9 +27,15 @@ function Layout() {
     <div>
       <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm">
         <Container fluid>
-          <Navbar.Brand href="/">
-            <i className="fas fa-chart-line me-2"></i>
-            <strong>NetMark Pro</strong>
+          <Navbar.Brand href="/" className="d-flex align-items-center">
+            <img 
+              src="/favicon.svg" 
+              alt="NetMark Pro" 
+              width="32" 
+              height="32" 
+              className="me-2"
+            />
+            <strong className="fs-4">NetMark Pro</strong>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="main-navbar" />
           <Navbar.Collapse id="main-navbar">

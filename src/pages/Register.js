@@ -36,7 +36,13 @@ function Register() {
           <Card className="shadow-lg border-0 fade-in">
             <Card.Body className="p-5">
               <div className="text-center mb-4">
-                <i className="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                <img 
+                  src="/favicon.svg" 
+                  alt="NetMark Pro" 
+                  width="64" 
+                  height="64" 
+                  className="mb-3"
+                />
                 <h2 className="fw-bold text-primary">NetMark Pro</h2>
                 <p className="text-muted">Create Your Account</p>
               </div>
