@@ -140,7 +140,7 @@ class NotificationService {
 
   processNotifications(data) {
     if (!data) return;
-    const { overdue, dueToday, upcoming, mostUrgent } = data;
+    const { mostUrgent } = data;
 
     if (mostUrgent) {
       let title = '';
@@ -150,7 +150,7 @@ class NotificationService {
 
       if (mostUrgent.type === 'overdue') {
         const days = mostUrgent.first.days;
-        title = `ï¿½ï¿½ ${mostUrgent.count} Follow-up(s) OVERDUE!`;
+        title = `í´´ ${mostUrgent.count} Follow-up(s) OVERDUE!`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - ${days} day(s) overdue! Contact now!`
           : `${mostUrgent.count} prospects need immediate attention!`;
