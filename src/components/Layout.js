@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Container, Navbar, Nav, NavDropdown } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import { 
   FaTachometerAlt, 
   FaUsers, 
@@ -52,7 +53,8 @@ function Layout() {
                 <FaCalendarAlt className="me-1" /> Calendar
               </NavLink>
             </Nav>
-            <Nav>
+            <Nav className="align-items-center">
+              <NotificationBell />
               <NavDropdown title={<><FaUser className="me-1" /> {user?.name || 'User'}</>} align="end">
                 <NavDropdown.Item as={NavLink} to="/profile">
                   <FaUser className="me-2" /> Profile
