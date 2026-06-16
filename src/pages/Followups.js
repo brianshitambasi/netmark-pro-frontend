@@ -260,7 +260,7 @@ function Followups() {
         <Modal.Header closeButton><Modal.Title><FaPlus className="me-2" />Add Follow-up</Modal.Title></Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Alert variant="info" className="small"><strong>Ì≥ã Select Investment Package</strong></Alert>
+            <Alert variant="info" className="small"><strong>Select Investment Package</strong></Alert>
             <div className="mb-4">
               <Form.Label className="fw-bold">Select Package</Form.Label>
               <Row className="g-2">
@@ -282,7 +282,7 @@ function Followups() {
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Name *</Form.Label><Form.Control type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Phone *</Form.Label><Form.Control type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="254712345678" /></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot">Ì¥• Hot</option><option value="warm">Ìº§Ô∏è Warm</option><option value="cold">‚ùÑÔ∏è Cold</option></Form.Select></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">‚ùÑÔ∏è Cold</option></Form.Select></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Next Call Date *</Form.Label><Form.Control type="date" required value={formData.nextCallDate} onChange={(e) => setFormData({...formData, nextCallDate: e.target.value})} /></Form.Group></Col>
               <Col md={12}><Form.Group className="mb-3"><Form.Label>Total Amount (KSh)</Form.Label><Form.Control type="number" value={formData.totalAmount} onChange={(e) => setFormData({...formData, totalAmount: e.target.value})} placeholder="Enter amount or select package" disabled={!!selectedPackage} /></Form.Group></Col>
               <Col md={12}><Form.Group className="mb-3"><Form.Label>Notes</Form.Label><Form.Control as="textarea" rows={2} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} /></Form.Group></Col>

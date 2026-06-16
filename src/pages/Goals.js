@@ -35,12 +35,12 @@ function Goals() {
 
   const getTypeIcon = (type) => {
     const icons = {
-      recruitment: 'í±¥',
-      sales: 'í²°',
-      commission: 'í²µ',
-      activity: 'í³ž'
+      recruitment: '',
+      sales: '',
+      commission: '',
+      activity: ''
     };
-    return icons[type] || 'í¾¯';
+    return icons[type] || '';
   };
 
   if (loading) {

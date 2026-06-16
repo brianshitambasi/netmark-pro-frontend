@@ -40,7 +40,7 @@ function PaymentOptions({ show, onHide, followup, onPaymentComplete }) {
       const data = await response.json();
       if (data.success) {
         setShowSuccess(true);
-        toast.success(`í¾‰ FULL PAYMENT RECEIVED! ${followup.name} has completed their package!`);
+        toast.success(` FULL PAYMENT RECEIVED! ${followup.name} has completed their package!`);
         setTimeout(() => { setShowSuccess(false); onPaymentComplete(); onHide(); }, 3000);
       } else {
         toast.error(data.message);
@@ -75,7 +75,7 @@ function PaymentOptions({ show, onHide, followup, onPaymentComplete }) {
         const newPaidAmount = paidAmount + parseFloat(paymentAmount);
         if (newPaidAmount >= totalAmount) {
           setShowSuccess(true);
-          toast.success(`í¾‰ CONGRATULATIONS! ${followup.name} has completed full payment!`);
+          toast.success(` CONGRATULATIONS! ${followup.name} has completed full payment!`);
           setTimeout(() => { setShowSuccess(false); onPaymentComplete(); onHide(); }, 3000);
         } else {
           toast.success(data.message);
@@ -97,7 +97,7 @@ function PaymentOptions({ show, onHide, followup, onPaymentComplete }) {
       <Modal show={showSuccess} onHide={() => setShowSuccess(false)} centered size="lg">
         <Modal.Body className="text-center py-5">
           <div className="mb-4"><FaTrophy size={80} className="text-warning mb-3" /><FaStar size={40} className="text-warning position-absolute" style={{ marginLeft: -60, marginTop: -20 }} /><FaStar size={30} className="text-warning position-absolute" style={{ marginLeft: 40, marginTop: -30 }} /></div>
-          <h2 className="text-success mb-3">ï¿½ï¿½ PAYMENT COMPLETED! í¾‰</h2>
+          <h2 className="text-success mb-3"> PAYMENT COMPLETED! </h2>
           <div className="mb-3"><Badge bg="success" className="p-3 fs-5"><FaCheckCircle className="me-2" /> FULLY PAID</Badge></div>
           <h4>{followup?.name}</h4>
           <p className="lead">Package: <strong>{followup?.packageName || 'Custom'}</strong></p>
@@ -123,7 +123,7 @@ function PaymentOptions({ show, onHide, followup, onPaymentComplete }) {
         </Alert>
 
         {!isFullyPaid && remainingBalance > 0 && (
-          <div className="mb-4"><div className="d-grid"><Button variant="success" size="lg" onClick={handleFullPayment} disabled={loading} className="p-3"><FaTrophy className="me-2" />í²° COMPLETE FULL PAYMENT - KSh {remainingBalance.toLocaleString()} í²°</Button></div><div className="text-center mt-2"><small className="text-muted">Click to complete the full payment and activate account</small></div></div>
+          <div className="mb-4"><div className="d-grid"><Button variant="success" size="lg" onClick={handleFullPayment} disabled={loading} className="p-3"><FaTrophy className="me-2" /> COMPLETE FULL PAYMENT - KSh {remainingBalance.toLocaleString()} </Button></div><div className="text-center mt-2"><small className="text-muted">Click to complete the full payment and activate account</small></div></div>
         )}
 
         {isFullyPaid && <Alert variant="success" className="text-center"><FaCheckCircle className="me-2" /><strong>âœ… FULLY PAID!</strong> This prospect has completed their package payment.</Alert>}

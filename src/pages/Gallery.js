@@ -249,13 +249,13 @@ function Gallery() {
 
   const getCategoryIcon = (category) => {
     const icons = {
-      testimonial: 'Ì≥ù',
-      event: 'Ìæâ',
-      training: 'Ì≥ö',
-      product_demo: 'Ì≥¶',
-      team_photo: 'Ì±•'
+      testimonial: 'ÔøΩÔøΩÔøΩ',
+      event: 'ÔøΩÔøΩÔøΩ',
+      training: 'ÔøΩÔøΩÔøΩ',
+      product_demo: 'ÔøΩÔøΩÔøΩ',
+      team_photo: 'ÔøΩÔøΩÔøΩ'
     };
-    return icons[category] || 'Ì≥é';
+    return icons[category] || 'ÔøΩÔøΩÔøΩ';
   };
 
   const getMediaIcon = (type) => {
@@ -272,12 +272,12 @@ function Gallery() {
   });
 
   const categories = [
-    { value: 'all', label: 'All', icon: 'Ì≥Å' },
-    { value: 'testimonial', label: 'Testimonials', icon: 'Ì≥ù' },
-    { value: 'event', label: 'Events', icon: 'Ìæâ' },
-    { value: 'training', label: 'Trainings', icon: 'Ì≥ö' },
-    { value: 'product_demo', label: 'Product Demos', icon: 'Ì≥¶' },
-    { value: 'team_photo', label: 'Team Photos', icon: 'Ì±•' },
+    { value: 'all', label: 'All', icon: '' },
+    { value: 'testimonial', label: 'Testimonials', icon: '' },
+    { value: 'event', label: 'Events', icon: '' },
+    { value: 'training', label: 'Trainings', icon: '' },
+    { value: 'product_demo', label: 'Product Demos', icon: '' },
+    { value: 'team_photo', label: 'Team Photos', icon: '' },
   ];
 
   if (loading) {
@@ -402,7 +402,7 @@ function Gallery() {
           <Modal.Body>
             {error && <Alert variant="danger">{error}</Alert>}
             <Form.Group className="mb-3"><Form.Label>Title *</Form.Label><Form.Control type="text" required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} /></Form.Group>
-            <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}><option value="testimonial">Ì≥ù Testimonial</option><option value="event">Ìæâ Event</option><option value="training">Ì≥ö Training</option><option value="product_demo">Ì≥¶ Product Demo</option><option value="team_photo">Ì±• Team Photo</option></Form.Select></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}><option value="testimonial"> Testimonial</option><option value="event"> Event</option><option value="training"> Training</option><option value="product_demo"> Product Demo</option><option value="team_photo"> Team Photo</option></Form.Select></Form.Group>
             <Form.Group className="mb-3"><Form.Label>Description</Form.Label><Form.Control as="textarea" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></Form.Group>
             <Form.Group className="mb-3"><Form.Label>File (Image or Video)</Form.Label><Form.Control type="file" accept="image/*,video/*" onChange={(e) => setSelectedFile(e.target.files[0])} required /><Form.Text className="text-muted">Supported: JPG, PNG, GIF, MP4, MOV, AVI (Max 500MB)</Form.Text></Form.Group>
           </Modal.Body>
@@ -429,7 +429,7 @@ function Gallery() {
           </div>
           <hr />
           <Form.Group className="mb-3"><Form.Label>Title *</Form.Label><Form.Control type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Enter title for voice note" disabled={!audioBlob} /></Form.Group>
-          <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} disabled={!audioBlob}><option value="testimonial">Ì≥ù Testimonial</option><option value="event">Ìæâ Event</option><option value="training">Ì≥ö Training</option><option value="product_demo">Ì≥¶ Product Demo</option><option value="team_photo">Ì±• Team Photo</option></Form.Select></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} disabled={!audioBlob}><option value="testimonial"> Testimonial</option><option value="event"> Event</option><option value="training"> Training</option><option value="product_demo"> Product Demo</option><option value="team_photo"> Team Photo</option></Form.Select></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Description</Form.Label><Form.Control as="textarea" rows={2} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Optional description..." disabled={!audioBlob} /></Form.Group>
         </Modal.Body>
         <Modal.Footer><Button variant="secondary" onClick={() => { setShowVoiceModal(false); resetVoiceForm(); }}>Cancel</Button><Button variant="success" onClick={uploadVoiceNote} disabled={!audioBlob || uploading}>{uploading ? 'Uploading...' : 'Save Voice Note'}</Button></Modal.Footer>

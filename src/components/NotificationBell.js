@@ -50,9 +50,9 @@ function NotificationBell() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'overdue': return 'Ì¥¥';
-      case 'due-today': return 'Ì¥î';
-      default: return 'Ì≥Ö';
+      case 'overdue': return '';
+      case 'due-today': return '';
+      default: return '';
     }
   };
 
@@ -118,7 +118,7 @@ function NotificationBell() {
           <strong><FaBell className="me-2" />Notifications</strong>
           <div>
             <Button size="sm" variant="outline-primary" onClick={handleRefresh} disabled={loading} className="me-1">
-              {loading ? <Spinner animation="border" size="sm" /> : 'Ì¥Ñ'}
+              {loading ? <Spinner animation="border" size="sm" /> : ''}
             </Button>
             <Button size="sm" variant="outline-secondary" onClick={() => setShowDropdown(false)}>
               ‚úï
@@ -151,11 +151,11 @@ function NotificationBell() {
                     </Badge>
                   </div>
                   <div className="small text-muted">
-                    Ì≥Ö {new Date(n.dueDate).toLocaleDateString()}
+                     {new Date(n.dueDate).toLocaleDateString()}
                     {n.daysOverdue && <span className="text-danger ms-2">‚ö†Ô∏è {n.daysOverdue} days overdue</span>}
                     {n.daysUntil && <span className="text-info ms-2">‚è≥ {n.daysUntil} days left</span>}
                   </div>
-                  <div className="small text-muted">Ì≥û {n.phone || 'N/A'}</div>
+                  <div className="small text-muted"> {n.phone || 'N/A'}</div>
                 </div>
               </ListGroup.Item>
             ))}
@@ -165,7 +165,7 @@ function NotificationBell() {
           href="/followups"
           className="text-center text-primary border-top py-2"
         >
-          Ì≥ã View all follow-ups
+           View all follow-ups
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
