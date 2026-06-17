@@ -159,7 +159,7 @@ function Dashboard() {
       {/* Welcome Section */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
-          <h1 className="display-6 fw-bold mb-1">Welcome Back! í±‹</h1>
+          <h1 className="display-6 fw-bold mb-1">Welcome Back! </h1>
           <p className="text-muted mb-0">Here's what's happening with your business today</p>
         </div>
         <div className="d-flex gap-2">
