@@ -9,17 +9,19 @@ class NotificationService {
     this.urgentCount = 0;
     this.isInitialized = false;
     this.lastNotificationTime = 0;
-    this.minNotificationInterval = 30000;
+    this.minNotificationInterval = 15000; // 15 seconds
     this.soundEnabled = true;
     this.audioCache = {};
+    this.notificationShownToday = {};
   }
 
   preloadSound() {
     try {
+      // Use online notification sounds if local files not available
       const soundFiles = {
-        urgent: '/sounds/urgent.mp3',
-        reminder: '/sounds/reminder.mp3',
-        info: '/sounds/info.mp3'
+        urgent: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+        reminder: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
+        info: 'https://www.soundjay.com/button/beep-07.wav'
       };
       
       for (const [key, src] of Object.entries(soundFiles)) {
@@ -36,22 +38,29 @@ class NotificationService {
     if (!this.soundEnabled) return;
     
     try {
+      // Try cached audio first
       if (this.audioCache[type]) {
         const audio = this.audioCache[type];
         audio.currentTime = 0;
-        audio.play().catch(err => console.warn('Sound play failed:', err));
+        audio.volume = 0.7;
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
         return;
       }
 
+      // Fallback to online sound
       const soundFiles = {
-        urgent: '/sounds/urgent.mp3',
-        reminder: '/sounds/reminder.mp3',
-        info: '/sounds/info.mp3'
+        urgent: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+        reminder: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
+        info: 'https://www.soundjay.com/button/beep-07.wav'
       };
       
       const src = soundFiles[type] || soundFiles.reminder;
       const audio = new Audio(src);
-      audio.play().catch(err => console.warn('Sound play failed:', err));
+      audio.volume = 0.7;
+      audio.play().catch(() => {});
     } catch (error) {
       // Silently fail
     }
@@ -73,14 +82,33 @@ class NotificationService {
     return permission === 'granted';
   }
 
+  // Get the app icon URL
+  getIconUrl() {
+    // Try multiple sources for icon
+    const icons = [
+      '/images/logo.png',
+      '/favicon.svg',
+      '/favicon.ico',
+      'https://netmark-pro-frontend.vercel.app/favicon.svg'
+    ];
+    return icons.find(src => {
+      // Check if the resource exists (simple check)
+      return true; // Return first available
+    }) || '/favicon.ico';
+  }
+
   sendBrowserNotification(title, body, options = {}) {
     if (!('Notification' in window) || Notification.permission !== 'granted') {
+      // Fallback to toast
+      this.showToastNotification(`${title}: ${body}`, 'warning', 8000);
       return;
     }
 
+    // Play sound first
     const soundType = options.type || 'reminder';
     this.playSound(soundType);
 
+    // Prevent too many notifications
     const now = Date.now();
     if (now - this.lastNotificationTime < this.minNotificationInterval) {
       if (options.type !== 'urgent') return;
@@ -88,25 +116,54 @@ class NotificationService {
     this.lastNotificationTime = now;
 
     try {
+      // Create persistent notification like WhatsApp
       const notification = new Notification(title, {
         body: body,
-        icon: options.icon || '/favicon.ico',
-        tag: options.tag || 'netmark-notification',
-        requireInteraction: options.requireInteraction || true,
-        silent: true,
-        ...options
+        icon: this.getIconUrl(),
+        tag: options.tag || `netmark-${Date.now()}`,
+        requireInteraction: true, // Stays until user clicks or dismisses
+        silent: true, // We handle sound separately
+        badge: this.getIconUrl(),
+        timestamp: now,
+        vibrate: [200, 100, 200], // Vibrate pattern for mobile
+        actions: [
+          { action: 'view', title: 'í³‹ View Follow-ups' },
+          { action: 'dismiss', title: 'âŒ Dismiss' }
+        ]
       });
 
-      setTimeout(() => notification.close(), 15000);
+      // Auto-close after 30 seconds (less intrusive if user ignores)
+      setTimeout(() => {
+        if (notification) notification.close();
+      }, 30000);
 
-      notification.onclick = () => {
+      // Handle notification click
+      notification.onclick = (event) => {
+        event.preventDefault();
         window.focus();
         notification.close();
-        if (options.onClick) options.onClick();
+        // Navigate to follow-ups
         window.location.href = '/followups';
       };
+
+      // Handle action buttons
+      notification.onaction = (event) => {
+        if (event.action === 'view') {
+          window.focus();
+          window.location.href = '/followups';
+        }
+        notification.close();
+      };
+
+      // Handle close
+      notification.onclose = () => {
+        console.log('Notification dismissed');
+      };
+
     } catch (error) {
       console.error('Browser notification error:', error);
+      // Fallback to toast
+      this.showToastNotification(`${title}: ${body}`, 'warning', 8000);
     }
   }
 
@@ -146,27 +203,26 @@ class NotificationService {
       let title = '';
       let body = '';
       let type = '';
-      let requireInteraction = false;
+      let requireInteraction = true;
 
       if (mostUrgent.type === 'overdue') {
         const days = mostUrgent.first.days;
-        title = ` ${mostUrgent.count} Follow-up(s) OVERDUE!`;
+        title = `í´´ ${mostUrgent.count} Follow-up(s) OVERDUE!`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - ${days} day(s) overdue! Contact now!`
           : `${mostUrgent.count} prospects need immediate attention!`;
         type = 'urgent';
-        requireInteraction = true;
         this.showToastNotification(title, 'error', 8000);
       } else if (mostUrgent.type === 'due_today') {
-        title = ` ${mostUrgent.count} Follow-up(s) Due TODAY`;
+        title = `í´” ${mostUrgent.count} Follow-up(s) Due TODAY`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - Due today!`
           : `${mostUrgent.count} follow-ups scheduled for today`;
         type = 'reminder';
-        this.showToastNotification(title, 'warning', 500);
+        this.showToastNotification(title, 'warning', 5000);
       } else if (mostUrgent.type === 'upcoming') {
         const days = mostUrgent.first.days;
-        title = `h ${mostUrgent.count} Upcoming Follow-up(s)`;
+        title = `í³… ${mostUrgent.count} Upcoming Follow-up(s)`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - in ${days} day(s)`
           : `${mostUrgent.count} follow-ups in next 3 days`;
@@ -174,6 +230,7 @@ class NotificationService {
         this.showToastNotification(title, 'info', 4000);
       }
 
+      // Send system notification (like WhatsApp)
       this.sendBrowserNotification(
         title,
         body,
@@ -192,10 +249,12 @@ class NotificationService {
     }
     this.isInitialized = true;
     
+    // Initial check after 2 seconds
     setTimeout(() => {
       this.checkAndNotify();
-    }, 3000);
+    }, 2000);
     
+    // Polling
     this.intervalId = setInterval(() => {
       this.checkAndNotify();
     }, intervalSeconds * 1000);

@@ -52,13 +52,14 @@ function Calendar() {
           <div className="fw-bold mb-2">{day}</div>
           {events.followups?.map((event, idx) => (
             <div key={idx} className="small mb-1">
-              <Badge bg="info" className="me-1">í³ž</Badge>
+              <Badge bg="info" className="me-1"></Badge>
               {event.name}
             </div>
           ))}
           {events.events?.map((event, idx) => (
             <div key={idx} className="small mb-1">
-              <Badge bg="success" className="me-1">í¾‰</Badge>
+              <Badge bg="success" className="me-1"> </Badge>
+              
               {event.title}
             </div>
           ))}

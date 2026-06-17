@@ -16,7 +16,15 @@ function NotificationBell() {
     const soundState = notificationService.getSoundState();
     setSoundEnabled(soundState);
     notificationService.preloadSound();
-    notificationService.requestPermission();
+
+    // Request permission on load
+    notificationService.requestPermission().then(permitted => {
+      if (permitted) {
+        console.log('Notifications allowed ‚úÖ');
+      } else {
+        console.warn('Notifications blocked ‚ùå');
+      }
+    });
 
     const handler = (data) => {
       setUrgentCount(data.urgentCount || 0);
@@ -50,9 +58,9 @@ function NotificationBell() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'overdue': return '';
-      case 'due-today': return '';
-      default: return '';
+      case 'overdue': return 'Ì¥¥';
+      case 'due-today': return 'Ì¥î';
+      default: return 'Ì≥Ö';
     }
   };
 
@@ -118,7 +126,7 @@ function NotificationBell() {
           <strong><FaBell className="me-2" />Notifications</strong>
           <div>
             <Button size="sm" variant="outline-primary" onClick={handleRefresh} disabled={loading} className="me-1">
-              {loading ? <Spinner animation="border" size="sm" /> : ''}
+              {loading ? <Spinner animation="border" size="sm" /> : 'Ì¥Ñ'}
             </Button>
             <Button size="sm" variant="outline-secondary" onClick={() => setShowDropdown(false)}>
               ‚úï
@@ -151,11 +159,11 @@ function NotificationBell() {
                     </Badge>
                   </div>
                   <div className="small text-muted">
-                     {new Date(n.dueDate).toLocaleDateString()}
+                    Ì≥Ö {new Date(n.dueDate).toLocaleDateString()}
                     {n.daysOverdue && <span className="text-danger ms-2">‚ö†Ô∏è {n.daysOverdue} days overdue</span>}
                     {n.daysUntil && <span className="text-info ms-2">‚è≥ {n.daysUntil} days left</span>}
                   </div>
-                  <div className="small text-muted"> {n.phone || 'N/A'}</div>
+                  <div className="small text-muted">Ì≥û {n.phone || 'N/A'}</div>
                 </div>
               </ListGroup.Item>
             ))}
@@ -165,7 +173,7 @@ function NotificationBell() {
           href="/followups"
           className="text-center text-primary border-top py-2"
         >
-           View all follow-ups
+          Ì≥ã View all follow-ups
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
