@@ -127,7 +127,7 @@ class NotificationService {
         timestamp: now,
         vibrate: [200, 100, 200], // Vibrate pattern for mobile
         actions: [
-          { action: 'view', title: 'Ì≥ã View Follow-ups' },
+          { action: 'view', title: ' View Follow-ups' },
           { action: 'dismiss', title: '‚ùå Dismiss' }
         ]
       });
@@ -207,14 +207,14 @@ class NotificationService {
 
       if (mostUrgent.type === 'overdue') {
         const days = mostUrgent.first.days;
-        title = `Ì¥¥ ${mostUrgent.count} Follow-up(s) OVERDUE!`;
+        title = ` ${mostUrgent.count} Follow-up(s) OVERDUE!`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - ${days} day(s) overdue! Contact now!`
           : `${mostUrgent.count} prospects need immediate attention!`;
         type = 'urgent';
         this.showToastNotification(title, 'error', 8000);
       } else if (mostUrgent.type === 'due_today') {
-        title = `Ì¥î ${mostUrgent.count} Follow-up(s) Due TODAY`;
+        title = ` ${mostUrgent.count} Follow-up(s) Due TODAY`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - Due today!`
           : `${mostUrgent.count} follow-ups scheduled for today`;
@@ -222,7 +222,7 @@ class NotificationService {
         this.showToastNotification(title, 'warning', 5000);
       } else if (mostUrgent.type === 'upcoming') {
         const days = mostUrgent.first.days;
-        title = `Ì≥Ö ${mostUrgent.count} Upcoming Follow-up(s)`;
+        title = ` ${mostUrgent.count} Upcoming Follow-up(s)`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - in ${days} day(s)`
           : `${mostUrgent.count} follow-ups in next 3 days`;
