@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import ProspectForm from '../components/ProspectForm';
 import ProspectDetailsModal from '../components/ProspectDetailsModal';
 import EditProspectModal from '../components/EditProspectModal';
+import StageManager from '../components/StageManager';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://netmark-pro-backend.onrender.com/api';
@@ -22,6 +23,7 @@ function Prospects() {
   const [showForm, setShowForm] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showStageModal, setShowStageModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState(null);
   const [search, setSearch] = useState('');
@@ -138,7 +140,7 @@ function Prospects() {
       </div>
 
       {/* Pipeline Stage Summary Cards */}
-      <Row className="g-3 mb-4">
+      <Row className="g-2 mb-4">
         <Col md={2} xs={6}>
           <Card className="border-0 shadow-sm text-center">
             <Card.Body className="py-2">
@@ -368,16 +370,65 @@ function Prospects() {
                       </td>
                       <td>
                         <div className="d-flex gap-1 flex-wrap">
-                          <Button variant="success" size="sm" onClick={() => handleSendWhatsApp(prospect.phone, prospect.name)}>
+                          {/* WhatsApp Button */}
+                          <Button 
+                            variant="success" 
+                            size="sm" 
+                            onClick={() => handleSendWhatsApp(prospect.phone, prospect.name)}
+                            title="Send WhatsApp"
+                          >
                             <FaWhatsapp />
                           </Button>
-                          <Button variant="primary" size="sm" onClick={() => { setSelectedProspect(prospect); setShowDetailsModal(true); }}>
+                          
+                          {/* íº€ ROCKET BUTTON - Pipeline Stage Manager */}
+                          <Button 
+                            variant="info" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedProspect(prospect);
+                              setShowStageModal(true);
+                            }}
+                            title="Update Pipeline Stage"
+                          >
+                            <FaRocket />
+                          </Button>
+                          
+                          {/* View Details Button */}
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedProspect(prospect);
+                              setShowDetailsModal(true);
+                            }}
+                            title="View Details"
+                          >
                             <FaEye />
                           </Button>
-                          <Button variant="warning" size="sm" onClick={() => { setSelectedProspect(prospect); setShowEditModal(true); }}>
+                          
+                          {/* Edit Button */}
+                          <Button 
+                            variant="warning" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedProspect(prospect);
+                              setShowEditModal(true);
+                            }}
+                            title="Edit Prospect"
+                          >
                             <FaEdit />
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => { setSelectedProspect(prospect); setShowDeleteModal(true); }}>
+                          
+                          {/* Delete Button */}
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedProspect(prospect);
+                              setShowDeleteModal(true);
+                            }}
+                            title="Delete Prospect"
+                          >
                             <FaTrash />
                           </Button>
                         </div>
@@ -427,6 +478,13 @@ function Prospects() {
         onHide={() => setShowEditModal(false)}
         prospect={selectedProspect}
         onProspectUpdated={loadProspects}
+      />
+
+      <StageManager
+        show={showStageModal}
+        onHide={() => setShowStageModal(false)}
+        prospect={selectedProspect}
+        onUpdate={loadProspects}
       />
 
       <ConfirmationModal
