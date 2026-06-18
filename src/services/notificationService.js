@@ -9,176 +9,163 @@ class NotificationService {
     this.urgentCount = 0;
     this.isInitialized = false;
     this.lastNotificationTime = 0;
-    this.minNotificationInterval = 15000; // 15 seconds
+    this.minNotificationInterval = 15000;
     this.soundEnabled = true;
-    this.audioCache = {};
-    this.notificationShownToday = {};
+    this.swRegistration = null;
   }
 
-  preloadSound() {
-    try {
-      // Use online notification sounds if local files not available
-      const soundFiles = {
-        urgent: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
-        reminder: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
-        info: 'https://www.soundjay.com/button/beep-07.wav'
-      };
-      
-      for (const [key, src] of Object.entries(soundFiles)) {
-        const audio = new Audio(src);
-        audio.preload = 'auto';
-        this.audioCache[key] = audio;
+  // Initialize service worker
+  async initServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        this.swRegistration = await navigator.serviceWorker.ready;
+        console.log('Service Worker ready for notifications');
+        return true;
+      } catch (error) {
+        console.error('Service Worker not ready:', error);
+        return false;
       }
-    } catch (error) {
-      console.warn('Could not preload sounds:', error);
     }
+    return false;
+  }
+
+  generateSound(type) {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      if (type === 'urgent') {
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.3;
+        oscillator.type = 'square';
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 300);
+        setTimeout(() => {
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.frequency.value = 600;
+          gain2.gain.value = 0.3;
+          osc2.type = 'square';
+          osc2.start();
+          setTimeout(() => osc2.stop(), 300);
+        }, 200);
+      } else if (type === 'reminder') {
+        oscillator.frequency.value = 523.25;
+        gainNode.gain.value = 0.2;
+        oscillator.type = 'sine';
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 400);
+      } else {
+        oscillator.frequency.value = 659.25;
+        gainNode.gain.value = 0.15;
+        oscillator.type = 'sine';
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 300);
+      }
+    } catch (error) {}
   }
 
   playSound(type = 'reminder') {
     if (!this.soundEnabled) return;
-    
-    try {
-      // Try cached audio first
-      if (this.audioCache[type]) {
-        const audio = this.audioCache[type];
-        audio.currentTime = 0;
-        audio.volume = 0.7;
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {});
-        }
-        return;
-      }
-
-      // Fallback to online sound
-      const soundFiles = {
-        urgent: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
-        reminder: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
-        info: 'https://www.soundjay.com/button/beep-07.wav'
-      };
-      
-      const src = soundFiles[type] || soundFiles.reminder;
-      const audio = new Audio(src);
-      audio.volume = 0.7;
-      audio.play().catch(() => {});
-    } catch (error) {
-      // Silently fail
-    }
+    try { this.generateSound(type); } catch (e) {}
   }
 
   async requestPermission() {
     if (!('Notification' in window)) {
-      console.log('Browser notifications not supported');
+      console.log('Notifications not supported');
       return false;
     }
-    if (Notification.permission === 'granted') {
-      return true;
-    }
+    if (Notification.permission === 'granted') return true;
     if (Notification.permission === 'denied') {
-      console.log('Notification permission denied');
+      console.warn('Notifications blocked');
       return false;
     }
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   }
 
-  // Get the app icon URL
   getIconUrl() {
-    // Try multiple sources for icon
-    const icons = [
-      '/images/logo.png',
-      '/favicon.svg',
-      '/favicon.ico',
-      'https://netmark-pro-frontend.vercel.app/favicon.svg'
-    ];
-    return icons.find(src => {
-      // Check if the resource exists (simple check)
-      return true; // Return first available
-    }) || '/favicon.ico';
+    const icons = ['/images/logo.png', '/favicon.svg', '/favicon.ico'];
+    return icons.find(() => true) || '/favicon.ico';
   }
 
-  sendBrowserNotification(title, body, options = {}) {
+  // Send notification using Service Worker if available
+  async sendBrowserNotification(title, body, options = {}) {
     if (!('Notification' in window) || Notification.permission !== 'granted') {
-      // Fallback to toast
       this.showToastNotification(`${title}: ${body}`, 'warning', 8000);
       return;
     }
 
-    // Play sound first
-    const soundType = options.type || 'reminder';
-    this.playSound(soundType);
+    this.playSound(options.type || 'reminder');
 
-    // Prevent too many notifications
     const now = Date.now();
     if (now - this.lastNotificationTime < this.minNotificationInterval) {
       if (options.type !== 'urgent') return;
     }
     this.lastNotificationTime = now;
 
+    const notificationOptions = {
+      body: body,
+      icon: this.getIconUrl(),
+      tag: options.tag || `netmark-${Date.now()}`,
+      data: { url: '/followups' },
+      vibrate: [200, 100, 200],
+      requireInteraction: true
+    };
+
     try {
-      // Create persistent notification like WhatsApp
-      const notification = new Notification(title, {
-        body: body,
-        icon: this.getIconUrl(),
-        tag: options.tag || `netmark-${Date.now()}`,
-        requireInteraction: true, // Stays until user clicks or dismisses
-        silent: true, // We handle sound separately
-        badge: this.getIconUrl(),
-        timestamp: now,
-        vibrate: [200, 100, 200], // Vibrate pattern for mobile
-        actions: [
-          { action: 'view', title: ' View Follow-ups' },
-          { action: 'dismiss', title: 'âŒ Dismiss' }
-        ]
-      });
+      // Try using Service Worker first (better for mobile background)
+      if (this.swRegistration && this.swRegistration.showNotification) {
+        await this.swRegistration.showNotification(title, notificationOptions);
+        console.log('Notification sent via Service Worker');
+        return;
+      }
 
-      // Auto-close after 30 seconds (less intrusive if user ignores)
-      setTimeout(() => {
-        if (notification) notification.close();
-      }, 30000);
-
-      // Handle notification click
-      notification.onclick = (event) => {
-        event.preventDefault();
+      // Fallback to standard Notification API
+      const notification = new Notification(title, notificationOptions);
+      setTimeout(() => notification.close(), 30000);
+      notification.onclick = () => {
         window.focus();
         notification.close();
-        // Navigate to follow-ups
         window.location.href = '/followups';
       };
-
-      // Handle action buttons
-      notification.onaction = (event) => {
-        if (event.action === 'view') {
-          window.focus();
-          window.location.href = '/followups';
-        }
-        notification.close();
-      };
-
-      // Handle close
-      notification.onclose = () => {
-        console.log('Notification dismissed');
-      };
-
     } catch (error) {
-      console.error('Browser notification error:', error);
-      // Fallback to toast
-      this.showToastNotification(`${title}: ${body}`, 'warning', 8000);
+      console.error('Notification error:', error);
+      // Fallback: standard notification without vibrate
+      try {
+        const simpleOptions = { ...notificationOptions };
+        delete simpleOptions.vibrate;
+        if (this.swRegistration) {
+          await this.swRegistration.showNotification(title, simpleOptions);
+        } else {
+          const notification = new Notification(title, simpleOptions);
+          setTimeout(() => notification.close(), 30000);
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+            window.location.href = '/followups';
+          };
+        }
+      } catch (fallbackError) {
+        console.error('Fallback notification failed:', fallbackError);
+        this.showToastNotification(`${title}: ${body}`, 'warning', 8000);
+      }
     }
   }
 
   showToastNotification(message, type = 'info', duration = 5000) {
-    if (type === 'error' || type === 'danger') {
-      this.playSound('urgent');
-    } else if (type === 'warning') {
-      this.playSound('reminder');
-    } else {
-      this.playSound('info');
-    }
+    if (type === 'error' || type === 'danger') this.playSound('urgent');
+    else if (type === 'warning') this.playSound('reminder');
+    else this.playSound('info');
 
-    const toastFn = type === 'info' ? toast : 
+    const toastFn = type === 'info' ? toast :
                     type === 'success' ? toast.success :
-                    type === 'error' ? toast.error : 
+                    type === 'error' ? toast.error :
                     type === 'warning' ? toast : toast;
     toastFn(message, { duration });
   }
@@ -200,21 +187,18 @@ class NotificationService {
     const { mostUrgent } = data;
 
     if (mostUrgent) {
-      let title = '';
-      let body = '';
-      let type = '';
-      let requireInteraction = true;
+      let title = '', body = '', type = '';
 
       if (mostUrgent.type === 'overdue') {
         const days = mostUrgent.first.days;
-        title = ` ${mostUrgent.count} Follow-up(s) OVERDUE!`;
+        title = `í´´ ${mostUrgent.count} Follow-up(s) OVERDUE!`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - ${days} day(s) overdue! Contact now!`
           : `${mostUrgent.count} prospects need immediate attention!`;
         type = 'urgent';
         this.showToastNotification(title, 'error', 8000);
       } else if (mostUrgent.type === 'due_today') {
-        title = ` ${mostUrgent.count} Follow-up(s) Due TODAY`;
+        title = `í´” ${mostUrgent.count} Follow-up(s) Due TODAY`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - Due today!`
           : `${mostUrgent.count} follow-ups scheduled for today`;
@@ -222,7 +206,7 @@ class NotificationService {
         this.showToastNotification(title, 'warning', 5000);
       } else if (mostUrgent.type === 'upcoming') {
         const days = mostUrgent.first.days;
-        title = ` ${mostUrgent.count} Upcoming Follow-up(s)`;
+        title = `ï¿½ï¿½ ${mostUrgent.count} Upcoming Follow-up(s)`;
         body = mostUrgent.count === 1 
           ? `${mostUrgent.first.name} - in ${days} day(s)`
           : `${mostUrgent.count} follow-ups in next 3 days`;
@@ -230,34 +214,21 @@ class NotificationService {
         this.showToastNotification(title, 'info', 4000);
       }
 
-      // Send system notification (like WhatsApp)
-      this.sendBrowserNotification(
-        title,
-        body,
-        { 
-          type: type,
-          requireInteraction: requireInteraction,
-          tag: `netmark-${Date.now()}`
-        }
-      );
+      this.sendBrowserNotification(title, body, { type, tag: `netmark-${Date.now()}` });
     }
   }
 
   startPolling(intervalSeconds = 30) {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    if (this.intervalId) clearInterval(this.intervalId);
     this.isInitialized = true;
-    
-    // Initial check after 2 seconds
-    setTimeout(() => {
-      this.checkAndNotify();
-    }, 2000);
-    
-    // Polling
-    this.intervalId = setInterval(() => {
-      this.checkAndNotify();
-    }, intervalSeconds * 1000);
+
+    // Initialize service worker first
+    this.initServiceWorker().then(() => {
+      console.log('Service Worker initialized for notifications');
+    });
+
+    setTimeout(() => this.checkAndNotify(), 2000);
+    this.intervalId = setInterval(() => this.checkAndNotify(), intervalSeconds * 1000);
   }
 
   async checkAndNotify() {
@@ -266,7 +237,6 @@ class NotificationService {
       this.urgentCount = 0;
       return;
     }
-    
     try {
       const data = await this.fetchNotifications();
       if (data) {
@@ -282,17 +252,10 @@ class NotificationService {
   updateBadgeCount(count) {
     this.urgentCount = count;
     if (navigator.setAppBadge) {
-      if (count > 0) {
-        navigator.setAppBadge(count);
-      } else {
-        navigator.clearAppBadge();
-      }
+      if (count > 0) navigator.setAppBadge(count);
+      else navigator.clearAppBadge();
     }
-    if (count > 0) {
-      document.title = `(${count}) NetMark Pro`;
-    } else {
-      document.title = 'NetMark Pro';
-    }
+    document.title = count > 0 ? `(${count}) NetMark Pro` : 'NetMark Pro';
   }
 
   onNotification(callback) {
@@ -319,9 +282,7 @@ class NotificationService {
 
   getSoundState() {
     const saved = localStorage.getItem('notificationSound');
-    if (saved !== null) {
-      this.soundEnabled = saved === 'true';
-    }
+    if (saved !== null) this.soundEnabled = saved === 'true';
     return this.soundEnabled;
   }
 }
