@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Navbar, Nav, NavDropdown, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -19,9 +19,11 @@ import {
 } from 'react-icons/fa';
 import { dashboardService } from '../services/api';
 
-function Layout() {
+// Memoized component to prevent unnecessary re-renders
+const Layout = memo(() => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('darkMode') === 'true';
   });
@@ -45,27 +47,40 @@ function Layout() {
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
 
-  // Fetch stats for badge
+  // Fetch stats for badge - only once
   useEffect(() => {
     const loadStats = async () => {
       try {
         const response = await dashboardService.getStats();
         setStats(response.data.data);
       } catch (error) {
-        console.error('Failed to load stats');
+        // Silent fail
       }
     };
     loadStats();
   }, []);
 
-  const handleLogout = () => {
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = useCallback(() => {
     logout();
     navigate('/login');
-  };
+  }, [logout, navigate]);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prev => !prev);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuOpen(prev => !prev);
+  }, []);
+
+  const handleNavLinkClick = useCallback(() => {
+    setMobileMenuOpen(false);
+  }, []);
 
   const navItems = [
     { path: '/dashboard', icon: <FaTachometerAlt />, label: 'Dashboard', badge: null },
@@ -82,6 +97,8 @@ function Layout() {
         bg={darkMode ? 'dark' : 'light'} 
         variant={darkMode ? 'dark' : 'light'} 
         expand="lg" 
+        expanded={mobileMenuOpen}
+        onToggle={toggleMobileMenu}
         className={`shadow-sm border-bottom ${darkMode ? 'border-secondary' : 'border-light'}`}
         style={{ 
           position: 'sticky', 
@@ -115,13 +132,13 @@ function Layout() {
             </span>
             <Navbar.Toggle 
               aria-controls="main-navbar" 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={toggleMobileMenu}
             >
               <FaBars />
             </Navbar.Toggle>
           </div>
 
-          <Navbar.Collapse id="main-navbar" className={mobileMenuOpen ? 'show' : ''}>
+          <Navbar.Collapse id="main-navbar">
             <Nav className="me-auto">
               {navItems.map((item) => (
                 <NavLink
@@ -132,11 +149,7 @@ function Layout() {
                       isActive ? 'active-nav' : ''
                     }`
                   }
-                  onClick={() => setMobileMenuOpen(false)}
-                  style={{
-                    position: 'relative',
-                    transition: 'all 0.2s ease'
-                  }}
+                  onClick={handleNavLinkClick}
                 >
                   <span className="fs-6">{item.icon}</span>
                   <span>{item.label}</span>
@@ -155,13 +168,11 @@ function Layout() {
             </Nav>
 
             <div className="d-flex align-items-center gap-2">
-              {/* Time Display */}
               <div className={`d-none d-lg-block small px-2 py-1 rounded-3 ${darkMode ? 'text-light' : 'text-muted'}`}>
                 {currentTime.toLocaleDateString([], { month: 'short', day: 'numeric' })} 
                 {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
 
-              {/* Dark Mode Toggle */}
               <button
                 onClick={toggleDarkMode}
                 className={`btn btn-sm rounded-circle p-2 ${darkMode ? 'btn-light' : 'btn-dark'}`}
@@ -171,10 +182,8 @@ function Layout() {
                 {darkMode ? <FaSun className="text-warning" /> : <FaMoon />}
               </button>
 
-              {/* Notification Bell */}
               <NotificationBell />
 
-              {/* User Dropdown */}
               <NavDropdown
                 title={
                   <div className="d-flex align-items-center gap-2">
@@ -214,7 +223,6 @@ function Layout() {
         </Container>
       </main>
 
-      {/* Footer */}
       <footer className={`py-3 mt-4 border-top ${darkMode ? 'border-secondary bg-dark' : 'border-light bg-white'}`}>
         <Container fluid className="px-4">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -379,6 +387,6 @@ function Layout() {
       `}</style>
     </div>
   );
-}
+});
 
 export default Layout;

@@ -9,26 +9,24 @@ class NotificationService {
     this.urgentCount = 0;
     this.isInitialized = false;
     this.lastNotificationTime = 0;
-    this.minNotificationInterval = 30000; // 30 seconds
+    this.minNotificationInterval = 60000; // 60 seconds
     this.soundEnabled = true;
     this.swRegistration = null;
     this.audioContext = null;
     this.notificationCooldown = {};
+    this.isPolling = false;
   }
 
-  // Get or create audio context
   getAudioContext() {
     try {
       if (!this.audioContext || this.audioContext.state === 'closed') {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
-      // Resume if suspended
       if (this.audioContext.state === 'suspended') {
         this.audioContext.resume();
       }
       return this.audioContext;
     } catch (error) {
-      console.warn('AudioContext not available:', error);
       return null;
     }
   }
@@ -49,7 +47,6 @@ class NotificationService {
         oscillator.type = 'square';
         oscillator.start();
         oscillator.stop(ctx.currentTime + 0.3);
-        // Second beep
         setTimeout(() => {
           try {
             const osc2 = ctx.createOscillator();
@@ -76,9 +73,7 @@ class NotificationService {
         oscillator.start();
         oscillator.stop(ctx.currentTime + 0.3);
       }
-    } catch (error) {
-      // Silently fail
-    }
+    } catch (error) {}
   }
 
   playSound(type = 'reminder') {
@@ -92,7 +87,6 @@ class NotificationService {
         this.swRegistration = await navigator.serviceWorker.ready;
         return true;
       } catch (error) {
-        console.warn('Service Worker not ready:', error);
         return false;
       }
     }
@@ -100,9 +94,7 @@ class NotificationService {
   }
 
   async requestPermission() {
-    if (!('Notification' in window)) {
-      return false;
-    }
+    if (!('Notification' in window)) return false;
     if (Notification.permission === 'granted') return true;
     if (Notification.permission === 'denied') return false;
     const permission = await Notification.requestPermission();
@@ -137,13 +129,10 @@ class NotificationService {
     };
 
     try {
-      // Try using Service Worker first
       if (this.swRegistration && this.swRegistration.showNotification) {
         await this.swRegistration.showNotification(title, notificationOptions);
         return;
       }
-
-      // Fallback to standard Notification API
       const notification = new Notification(title, notificationOptions);
       setTimeout(() => notification.close(), 20000);
       notification.onclick = () => {
@@ -152,7 +141,6 @@ class NotificationService {
         window.location.href = '/followups';
       };
     } catch (error) {
-      // Silent fallback - just show toast
       this.showToastNotification(`${title}: ${body}`, 'warning', 6000);
     }
   }
@@ -179,7 +167,6 @@ class NotificationService {
       });
       return response.data.data;
     } catch (error) {
-      // Silent fail - don't spam console
       return null;
     }
   }
@@ -220,18 +207,21 @@ class NotificationService {
     }
   }
 
-  startPolling(intervalSeconds = 45) {
+  startPolling(intervalSeconds = 60) {
+    if (this.isPolling) return;
     if (this.intervalId) clearInterval(this.intervalId);
+    
     this.isInitialized = true;
+    this.isPolling = true;
 
     this.initServiceWorker().then(() => {
-      console.log('Service Worker initialized');
+      console.log('✅ Service Worker initialized for notifications');
     });
 
-    // Initial check after 5 seconds (give time for page to load)
+    // Only check once on startup, then every 60 seconds
     setTimeout(() => {
       this.checkAndNotify();
-    }, 5000);
+    }, 3000);
     
     this.intervalId = setInterval(() => {
       this.checkAndNotify();
@@ -277,9 +267,9 @@ class NotificationService {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    this.isPolling = false;
     this.isInitialized = false;
     this.updateBadgeCount(0);
-    // Close audio context
     if (this.audioContext && this.audioContext.state !== 'closed') {
       try { this.audioContext.close(); } catch (e) {}
     }
