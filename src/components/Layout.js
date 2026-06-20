@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Navbar, Nav, NavDropdown, Badge } from 'react-bootstrap';
@@ -27,17 +26,15 @@ function Layout() {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('darkMode') === 'true';
   });
-  const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Apply dark mode
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -47,7 +44,6 @@ function Layout() {
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
 
-  // Fetch stats for badge
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -60,9 +56,9 @@ function Layout() {
     loadStats();
   }, []);
 
-  // Close mobile menu on route change
+  // Close menu when route changes
   useEffect(() => {
-    setExpanded(false);
+    setMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = useCallback(() => {
@@ -74,12 +70,12 @@ function Layout() {
     setDarkMode(prev => !prev);
   }, []);
 
-  const toggleNavbar = useCallback(() => {
-    setExpanded(prev => !prev);
+  const toggleMenu = useCallback(() => {
+    setMenuOpen(prev => !prev);
   }, []);
 
-  const closeNavbar = useCallback(() => {
-    setExpanded(false);
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
   }, []);
 
   const navItems = [
@@ -97,8 +93,7 @@ function Layout() {
         bg={darkMode ? 'dark' : 'light'} 
         variant={darkMode ? 'dark' : 'light'} 
         expand="lg" 
-        expanded={expanded}
-        onToggle={toggleNavbar}
+        expanded={menuOpen}
         className={`shadow-sm border-bottom ${darkMode ? 'border-secondary' : 'border-light'}`}
         style={{ 
           position: 'sticky', 
@@ -130,16 +125,20 @@ function Layout() {
             <span className={`small ${darkMode ? 'text-light' : 'text-muted'}`}>
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
-            <Navbar.Toggle 
-              aria-controls="main-navbar" 
-              onClick={toggleNavbar}
+            <button 
+              className="navbar-toggler" 
+              type="button" 
+              onClick={toggleMenu}
+              aria-controls="main-navbar"
+              aria-expanded={menuOpen}
+              aria-label="Toggle navigation"
             >
               <FaBars />
-            </Navbar.Toggle>
+            </button>
           </div>
 
-          <Navbar.Collapse id="main-navbar">
-            <Nav className="me-auto" onClick={closeNavbar}>
+          <div className={`collapse navbar-collapse ${menuOpen ? 'show' : ''}`} id="main-navbar">
+            <Nav className="me-auto" onClick={closeMenu}>
               {navItems.map((item) => (
                 <NavLink
                   key={item.path}
@@ -212,7 +211,7 @@ function Layout() {
                 </NavDropdown.Item>
               </NavDropdown>
             </div>
-          </Navbar.Collapse>
+          </div>
         </Container>
       </Navbar>
 
@@ -382,6 +381,33 @@ function Layout() {
         }
         .dark .shadow-sm {
           box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+        }
+        .navbar-toggler {
+          border: none;
+          padding: 0.25rem 0.5rem;
+          font-size: 1.25rem;
+          line-height: 1;
+          background: transparent;
+          color: ${darkMode ? '#fff' : '#000'};
+        }
+        .navbar-toggler:focus {
+          box-shadow: none;
+        }
+        @media (max-width: 991.98px) {
+          .navbar-collapse {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: ${darkMode ? '#1a1a2e' : '#fff'};
+            padding: 1rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-radius: 0 0 12px 12px;
+            z-index: 1050;
+          }
+          .navbar-collapse.show {
+            display: block !important;
+          }
         }
       `}</style>
     </div>
