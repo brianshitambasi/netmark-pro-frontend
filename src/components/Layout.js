@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Navbar, Nav, NavDropdown, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
@@ -19,14 +20,14 @@ import {
 } from 'react-icons/fa';
 import { dashboardService } from '../services/api';
 
-const Layout = memo(() => {
+function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('darkMode') === 'true';
   });
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stats, setStats] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -61,7 +62,7 @@ const Layout = memo(() => {
 
   // Close mobile menu on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
+    setExpanded(false);
   }, [location.pathname]);
 
   const handleLogout = useCallback(() => {
@@ -73,12 +74,12 @@ const Layout = memo(() => {
     setDarkMode(prev => !prev);
   }, []);
 
-  const toggleMobileMenu = useCallback(() => {
-    setMobileMenuOpen(prev => !prev);
+  const toggleNavbar = useCallback(() => {
+    setExpanded(prev => !prev);
   }, []);
 
-  const handleNavLinkClick = useCallback(() => {
-    setMobileMenuOpen(false);
+  const closeNavbar = useCallback(() => {
+    setExpanded(false);
   }, []);
 
   const navItems = [
@@ -96,8 +97,8 @@ const Layout = memo(() => {
         bg={darkMode ? 'dark' : 'light'} 
         variant={darkMode ? 'dark' : 'light'} 
         expand="lg" 
-        expanded={mobileMenuOpen}
-        onToggle={toggleMobileMenu}
+        expanded={expanded}
+        onToggle={toggleNavbar}
         className={`shadow-sm border-bottom ${darkMode ? 'border-secondary' : 'border-light'}`}
         style={{ 
           position: 'sticky', 
@@ -131,14 +132,14 @@ const Layout = memo(() => {
             </span>
             <Navbar.Toggle 
               aria-controls="main-navbar" 
-              onClick={toggleMobileMenu}
+              onClick={toggleNavbar}
             >
               <FaBars />
             </Navbar.Toggle>
           </div>
 
           <Navbar.Collapse id="main-navbar">
-            <Nav className="me-auto">
+            <Nav className="me-auto" onClick={closeNavbar}>
               {navItems.map((item) => (
                 <NavLink
                   key={item.path}
@@ -148,7 +149,6 @@ const Layout = memo(() => {
                       isActive ? 'active-nav' : ''
                     }`
                   }
-                  onClick={handleNavLinkClick}
                 >
                   <span className="fs-6">{item.icon}</span>
                   <span>{item.label}</span>
@@ -190,15 +190,7 @@ const Layout = memo(() => {
                       className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
                       style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: 'bold' }}
                     >
-                      {user?.profilePicture ? (
-                        <img 
-                          src={user.profilePicture} 
-                          alt="Profile" 
-                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        user?.name?.charAt(0)?.toUpperCase() || 'U'
-                      )}
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                     <span className={`d-none d-md-block ${darkMode ? 'text-white' : 'text-dark'}`}>
                       {user?.name || 'User'}
@@ -394,6 +386,6 @@ const Layout = memo(() => {
       `}</style>
     </div>
   );
-});
+}
 
 export default Layout;
