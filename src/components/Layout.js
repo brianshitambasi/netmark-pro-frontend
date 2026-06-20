@@ -19,7 +19,6 @@ import {
 } from 'react-icons/fa';
 import { dashboardService } from '../services/api';
 
-// Memoized component to prevent unnecessary re-renders
 const Layout = memo(() => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,14 +46,14 @@ const Layout = memo(() => {
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
 
-  // Fetch stats for badge - only once
+  // Fetch stats for badge
   useEffect(() => {
     const loadStats = async () => {
       try {
         const response = await dashboardService.getStats();
         setStats(response.data.data);
       } catch (error) {
-        // Silent fail
+        console.error('Failed to load stats');
       }
     };
     loadStats();
@@ -191,7 +190,15 @@ const Layout = memo(() => {
                       className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
                       style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: 'bold' }}
                     >
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                      {user?.profilePicture ? (
+                        <img 
+                          src={user.profilePicture} 
+                          alt="Profile" 
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        user?.name?.charAt(0)?.toUpperCase() || 'U'
+                      )}
                     </div>
                     <span className={`d-none d-md-block ${darkMode ? 'text-white' : 'text-dark'}`}>
                       {user?.name || 'User'}
