@@ -17,6 +17,19 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://netmark-pro-backend.onrender.com/api';
 
+// Helper function to get source display name
+const getSourceDisplay = (source) => {
+  const sourceMap = {
+    'referral': 'referral from a friend',
+    'social_media': 'social media (Facebook/Instagram)',
+    'event': 'the event we met at',
+    'cold_call': 'a previous call',
+    'website': 'our website',
+    'other': 'other platform'
+  };
+  return sourceMap[source] || 'a mutual connection';
+};
+
 function Prospects() {
   const [prospects, setProspects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +81,13 @@ function Prospects() {
     }
   };
 
-  const handleSendWhatsApp = (phone, name) => {
-    const message = encodeURIComponent(`Hello ${name}! This is from NetMark Pro. Let me know when you're available.`);
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  // Personalized WhatsApp message with source
+  const handleSendWhatsApp = (prospect) => {
+    const name = prospect.name || 'there';
+    const source = getSourceDisplay(prospect.source);
+    const message = `Hello ${name}! This is from Mr Brian. I hope you remember me - we connected via ${source}. Let me know when you're available for a quick chat.`;
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/${prospect.phone}?text=${encoded}`, '_blank');
     toast.success(`Opening WhatsApp for ${name}`);
   };
 
@@ -370,17 +387,17 @@ function Prospects() {
                       </td>
                       <td>
                         <div className="d-flex gap-1 flex-wrap">
-                          {/* WhatsApp Button */}
+                          {/* WhatsApp Button with personalized message */}
                           <Button 
                             variant="success" 
                             size="sm" 
-                            onClick={() => handleSendWhatsApp(prospect.phone, prospect.name)}
+                            onClick={() => handleSendWhatsApp(prospect)}
                             title="Send WhatsApp"
                           >
                             <FaWhatsapp />
                           </Button>
                           
-                          {/* íº€ ROCKET BUTTON - Pipeline Stage Manager */}
+                          {/* Rocket Button */}
                           <Button 
                             variant="info" 
                             size="sm" 
@@ -393,7 +410,7 @@ function Prospects() {
                             <FaRocket />
                           </Button>
                           
-                          {/* View Details Button */}
+                          {/* View Details */}
                           <Button 
                             variant="primary" 
                             size="sm" 
@@ -406,7 +423,7 @@ function Prospects() {
                             <FaEye />
                           </Button>
                           
-                          {/* Edit Button */}
+                          {/* Edit */}
                           <Button 
                             variant="warning" 
                             size="sm" 
@@ -419,7 +436,7 @@ function Prospects() {
                             <FaEdit />
                           </Button>
                           
-                          {/* Delete Button */}
+                          {/* Delete */}
                           <Button 
                             variant="danger" 
                             size="sm" 
@@ -458,44 +475,11 @@ function Prospects() {
       </Card>
 
       {/* Modals */}
-      <ProspectForm
-        show={showForm}
-        onHide={() => setShowForm(false)}
-        onProspectAdded={loadProspects}
-      />
-
-      <ProspectDetailsModal
-        show={showDetailsModal}
-        onHide={() => setShowDetailsModal(false)}
-        prospect={selectedProspect}
-        onEdit={(p) => { setSelectedProspect(p); setShowEditModal(true); }}
-        onDelete={(p) => { setSelectedProspect(p); setShowDeleteModal(true); }}
-        onWhatsApp={handleSendWhatsApp}
-      />
-
-      <EditProspectModal
-        show={showEditModal}
-        onHide={() => setShowEditModal(false)}
-        prospect={selectedProspect}
-        onProspectUpdated={loadProspects}
-      />
-
-      <StageManager
-        show={showStageModal}
-        onHide={() => setShowStageModal(false)}
-        prospect={selectedProspect}
-        onUpdate={loadProspects}
-      />
-
-      <ConfirmationModal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        onConfirm={handleDelete}
-        title="Delete Prospect"
-        message={`Delete ${selectedProspect?.name}?`}
-        confirmText="Delete"
-        variant="danger"
-      />
+      <ProspectForm show={showForm} onHide={() => setShowForm(false)} onProspectAdded={loadProspects} />
+      <ProspectDetailsModal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} prospect={selectedProspect} onEdit={(p) => { setSelectedProspect(p); setShowEditModal(true); }} onDelete={(p) => { setSelectedProspect(p); setShowDeleteModal(true); }} onWhatsApp={handleSendWhatsApp} />
+      <EditProspectModal show={showEditModal} onHide={() => setShowEditModal(false)} prospect={selectedProspect} onProspectUpdated={loadProspects} />
+      <StageManager show={showStageModal} onHide={() => setShowStageModal(false)} prospect={selectedProspect} onUpdate={loadProspects} />
+      <ConfirmationModal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} onConfirm={handleDelete} title="Delete Prospect" message={`Delete ${selectedProspect?.name}?`} confirmText="Delete" variant="danger" />
     </div>
   );
 }

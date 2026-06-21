@@ -18,6 +18,19 @@ const PACKAGES = [
   { name: 'MEGAVERSE', price: 505100, accounts: 31, icon: <FaCrown />, color: 'dark' }
 ];
 
+// Helper function to get source display name
+const getSourceDisplay = (source) => {
+  const sourceMap = {
+    'referral': 'referral from a friend',
+    'social_media': 'social media (Facebook/Instagram)',
+    'event': 'the event we met at',
+    'cold_call': 'a previous call',
+    'website': 'our website',
+    'other': 'other platform'
+  };
+  return sourceMap[source] || 'a mutual connection';
+};
+
 function Followups() {
   const { followups, loading, createFollowup, deleteFollowup, whatsappClick, markFollowed } = useFollowups();
 
@@ -37,6 +50,16 @@ function Followups() {
   const [formData, setFormData] = useState({
     name: '', phone: '', email: '', category: 'warm', nextCallDate: '', notes: '', totalAmount: ''
   });
+
+  // Personalized WhatsApp message with source
+  const handleWhatsAppWithMessage = (followup) => {
+    const name = followup.name || 'there';
+    const source = getSourceDisplay(followup.source);
+    const message = `Hello ${name}! This is from Mr Brian. I hope you remember me - we connected via ${source}. Let me know when you're available for a quick chat.`;
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/${followup.phone}?text=${encoded}`, '_blank');
+    toast.success(`Opening WhatsApp for ${name}`);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,7 +156,9 @@ function Followups() {
     }
   };
 
-  const handleWhatsApp = async (id) => {
+  // Keep original whatsappClick for tracking, but we'll use our custom message for opening
+  const handleWhatsAppClick = async (id) => {
+    // Just track the click - the actual opening is done by handleWhatsAppWithMessage
     await whatsappClick(id);
   };
 
@@ -237,7 +262,17 @@ function Followups() {
                           </td>
                           <td>
                             <div className="d-flex flex-wrap gap-1">
-                              <Button variant="success" size="sm" onClick={() => handleWhatsApp(f._id)}><FaWhatsapp /></Button>
+                              {/* WhatsApp button with personalized message */}
+                              <Button 
+                                variant="success" 
+                                size="sm" 
+                                onClick={() => {
+                                  handleWhatsAppClick(f._id); // track click
+                                  handleWhatsAppWithMessage(f); // open with custom message
+                                }}
+                              >
+                                <FaWhatsapp />
+                              </Button>
                               <Button variant="info" size="sm" onClick={() => handleMarkFollowed(f._id)}><FaCheck /></Button>
                               <Button variant="warning" size="sm" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowRescheduleModal(true); }}><FaClock /></Button>
                               <Button variant="primary" size="sm" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowPaymentModal(true); }}><FaMoneyBill /></Button>
@@ -282,7 +317,7 @@ function Followups() {
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Name *</Form.Label><Form.Control type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Phone *</Form.Label><Form.Control type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="254712345678" /></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">❄️ Cold</option></Form.Select></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot"> Hot</option><option value="warm"> Warm</option><option value="cold">❄️ Cold</option></Form.Select></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Next Call Date *</Form.Label><Form.Control type="date" required value={formData.nextCallDate} onChange={(e) => setFormData({...formData, nextCallDate: e.target.value})} /></Form.Group></Col>
               <Col md={12}><Form.Group className="mb-3"><Form.Label>Total Amount (KSh)</Form.Label><Form.Control type="number" value={formData.totalAmount} onChange={(e) => setFormData({...formData, totalAmount: e.target.value})} placeholder="Enter amount or select package" disabled={!!selectedPackage} /></Form.Group></Col>
               <Col md={12}><Form.Group className="mb-3"><Form.Label>Notes</Form.Label><Form.Control as="textarea" rows={2} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} /></Form.Group></Col>
