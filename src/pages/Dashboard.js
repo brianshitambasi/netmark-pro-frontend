@@ -1,51 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Spinner, Alert, Badge, ProgressBar as BootstrapProgressBar } from 'react-bootstrap';
-import { 
-  FaPhone, FaCheckCircle, FaChartLine, FaUsers, FaBullseye, 
-  FaClock, FaUserPlus, FaRocket, FaBell, FaExclamationTriangle,
+import { Row, Col, Spinner } from 'react-bootstrap';
+import {
+  FaPhone, FaCheckCircle, FaChartLine, FaUsers, FaBullseye,
+  FaClock, FaUserPlus, FaRocket, FaExclamationTriangle,
   FaArrowUp, FaArrowDown
 } from 'react-icons/fa';
 import { dashboardService } from '../services/api';
 import toast from 'react-hot-toast';
 
-// Chart Components
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
   Filler
 } from 'chart.js';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+
+// --- Pipeline stage palette: intensity fades as prospects move down the funnel ---
+const STAGE_COLORS = ['#4453D8', '#7A5FE0', '#C2629A', '#17A589'];
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('week');
-  const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     loadDashboard();
-    const interval = setInterval(() => {
-      loadDashboard();
-    }, 30000);
+    const interval = setInterval(loadDashboard, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -54,8 +42,6 @@ function Dashboard() {
       setLoading(true);
       const response = await dashboardService.getStats();
       setStats(response.data.data);
-      setAnimating(true);
-      setTimeout(() => setAnimating(false), 500);
     } catch (error) {
       toast.error('Failed to load dashboard');
     } finally {
@@ -63,325 +49,394 @@ function Dashboard() {
     }
   };
 
-  const getChartData = () => {
-    return {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      datasets: [
-        {
-          label: 'Follow-ups Completed',
-          data: [5, 8, 6, 12, 9, 3, 4],
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#3b82f6',
-        },
-        {
-          label: 'Conversions',
-          data: [1, 2, 1, 3, 2, 0, 1],
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#10b981',
-        }
-      ]
-    };
-  };
+  const getChartData = () => ({
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Follow-ups completed',
+        data: [5, 8, 6, 12, 9, 3, 4],
+        borderColor: '#4453D8',
+        backgroundColor: 'rgba(68, 83, 216, 0.08)',
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: '#4453D8',
+        pointRadius: 3,
+        borderWidth: 2,
+      },
+      {
+        label: 'Conversions',
+        data: [1, 2, 1, 3, 2, 0, 1],
+        borderColor: '#17A589',
+        backgroundColor: 'rgba(23, 165, 137, 0.08)',
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: '#17A589',
+        pointRadius: 3,
+        borderWidth: 2,
+      }
+    ]
+  });
 
-  const getConversionData = () => {
-    return {
-      labels: ['Leads', 'Qualified', 'Presented', 'Enrolled'],
-      datasets: [{
-        data: [100, 65, 40, 25],
-        backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'],
-        borderWidth: 0,
-      }]
-    };
-  };
+  const pipelineStages = [
+    { label: 'Leads', value: stats?.pipeline?.leads ?? 100 },
+    { label: 'Qualified', value: stats?.pipeline?.qualified ?? 65 },
+    { label: 'Presented', value: stats?.pipeline?.presented ?? 40 },
+    { label: 'Enrolled', value: stats?.pipeline?.enrolled ?? 25 },
+  ];
+  const pipelineMax = pipelineStages[0].value || 1;
 
   const statsCards = [
-    {
-      title: 'Total Follow-ups',
-      value: stats?.summary?.total || 0,
-      icon: <FaUsers className="text-primary" />,
-      color: 'primary',
-      change: '+12%',
-      changeType: 'up'
-    },
-    {
-      title: 'Completed Today',
-      value: stats?.today?.followedCompleted || 0,
-      icon: <FaCheckCircle className="text-success" />,
-      color: 'success',
-      change: '+8%',
-      changeType: 'up'
-    },
-    {
-      title: 'Pending Follow-ups',
-      value: stats?.summary?.pending || 0,
-      icon: <FaClock className="text-warning" />,
-      color: 'warning',
-      change: '-3%',
-      changeType: 'down'
-    },
-    {
-      title: 'Conversion Rate',
-      value: stats?.summary?.converted ? Math.round((stats.summary.converted / stats.summary.total) * 100) : 0,
-      icon: <FaRocket className="text-info" />,
-      color: 'info',
-      suffix: '%',
-      change: '+5%',
-      changeType: 'up'
-    }
+    { title: 'Total follow-ups', value: stats?.summary?.total || 0, icon: <FaUsers />, accent: '#4453D8', change: '+12%', changeType: 'up' },
+    { title: 'Completed today', value: stats?.today?.followedCompleted || 0, icon: <FaCheckCircle />, accent: '#17A589', change: '+8%', changeType: 'up' },
+    { title: 'Pending follow-ups', value: stats?.summary?.pending || 0, icon: <FaClock />, accent: '#E08E1D', change: '-3%', changeType: 'down' },
+    { title: 'Conversion rate', value: stats?.summary?.converted ? Math.round((stats.summary.converted / stats.summary.total) * 100) : 0, icon: <FaRocket />, accent: '#C2629A', suffix: '%', change: '+5%', changeType: 'up' }
   ];
 
   const quickActions = [
-    { icon: <FaUserPlus />, label: 'Add Prospect', color: 'primary', link: '/prospects' },
-    { icon: <FaPhone />, label: 'New Follow-up', color: 'success', link: '/followups' },
-    { icon: <FaChartLine />, label: 'View Analytics', color: 'info', link: '/analytics' },
-    { icon: <FaBullseye />, label: 'Set Goal', color: 'warning', link: '/goals' },
+    { icon: <FaUserPlus />, label: 'Add prospect', link: '/prospects' },
+    { icon: <FaPhone />, label: 'New follow-up', link: '/followups' },
+    { icon: <FaChartLine />, label: 'View analytics', link: '/analytics' },
+    { icon: <FaBullseye />, label: 'Set goal', link: '/goals' },
   ];
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-75">
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" size="lg" />
-          <p className="mt-3 text-muted">Loading dashboard...</p>
-        </div>
+      <div className="fdash-loading">
+        <Spinner animation="border" />
+        <p>Loading dashboard…</p>
+        <DashboardStyles />
       </div>
     );
   }
 
   return (
-    <div className={`fade-in ${animating ? 'animate' : ''}`}>
-      {/* Welcome Section */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div className="fdash">
+      {/* Header */}
+      <div className="fdash-header">
         <div>
-          <h1 className="display-6 fw-bold mb-1">Welcome Back! </h1>
-          <p className="text-muted mb-0">Here's what's happening with your business today</p>
+          <span className="fdash-eyebrow">Command center</span>
+          <h1 className="fdash-title">Welcome back</h1>
         </div>
-        <div className="d-flex gap-2">
-          <div className="bg-primary bg-opacity-10 rounded-3 px-3 py-2">
-            <small className="text-muted">Today</small>
-            <div className="fw-bold">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+        <div className="fdash-header-right">
+          <div className="fdash-date-chip">
+            <span className="fdash-date-label">Today</span>
+            <span className="fdash-date-value">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
           </div>
-          <button className="btn btn-outline-primary" onClick={loadDashboard} disabled={loading}>
-            <FaChartLine className="me-1" /> Refresh
+          <button className="fdash-btn fdash-btn-outline" onClick={loadDashboard} disabled={loading}>
+            <FaChartLine /> Refresh
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <Row className="g-3 mb-4">
+      {/* Stat strip */}
+      <div className="fdash-stat-strip">
         {statsCards.map((card, idx) => (
-          <Col md={6} lg={3} key={idx}>
-            <Card className={`border-0 shadow-sm h-100 stat-card stat-card-${card.color}`}>
-              <Card.Body className="p-4">
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div className={`stat-icon bg-${card.color} bg-opacity-10 rounded-3 p-3`}>{card.icon}</div>
-                  <div className={`badge bg-${card.changeType === 'up' ? 'success' : 'danger'} bg-opacity-10 text-${card.changeType === 'up' ? 'success' : 'danger'} d-flex align-items-center gap-1 px-2 py-1`}>
-                    {card.changeType === 'up' ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
-                    {card.change}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted small text-uppercase">{card.title}</div>
-                  <div className="d-flex align-items-baseline gap-1">
-                    <span className="fs-2 fw-bold">{card.value}{card.suffix || ''}</span>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Charts Row */}
-      <Row className="g-3 mb-4">
-        <Col lg={8}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center py-3">
-              <div>
-                <h6 className="mb-0 fw-bold"><FaChartLine className="me-2 text-primary" />Activity Overview</h6>
-                <small className="text-muted">Weekly performance</small>
+          <div className="fdash-stat-tile" key={idx} style={{ '--tile-accent': card.accent }}>
+            <div className="fdash-stat-top">
+              <div className="fdash-stat-icon">{card.icon}</div>
+              <div className={`fdash-trend fdash-trend-${card.changeType}`}>
+                {card.changeType === 'up' ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
+                {card.change}
               </div>
-              <div className="d-flex gap-2">
+            </div>
+            <div className="fdash-stat-value">{card.value}{card.suffix || ''}</div>
+            <div className="fdash-stat-label">{card.title}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Activity + Pipeline */}
+      <Row className="g-3 fdash-row">
+        <Col lg={8}>
+          <div className="fdash-panel fdash-panel-h">
+            <div className="fdash-panel-header">
+              <div>
+                <h6 className="fdash-panel-title">Activity overview</h6>
+                <span className="fdash-panel-sub">Weekly performance</span>
+              </div>
+              <div className="fdash-segmented">
                 {['week', 'month', 'year'].map(t => (
-                  <button key={t} className={`btn btn-sm ${timeframe === t ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setTimeframe(t)}>
+                  <button key={t} className={`fdash-segment ${timeframe === t ? 'is-active' : ''}`} onClick={() => setTimeframe(t)}>
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </button>
                 ))}
               </div>
-            </Card.Header>
-            <Card.Body>
-              <Line data={getChartData()} options={{
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
-              }} />
-            </Card.Body>
-          </Card>
+            </div>
+            <Line data={getChartData()} options={{
+              responsive: true,
+              plugins: { legend: { position: 'top', labels: { font: { family: "'Inter', sans-serif" }, boxWidth: 8, usePointStyle: true } } },
+              scales: {
+                y: { beginAtZero: true, grid: { color: '#E2E5EE' }, ticks: { font: { family: "'IBM Plex Mono', monospace" }, color: '#6B7280' } },
+                x: { grid: { display: false }, ticks: { font: { family: "'IBM Plex Mono', monospace" }, color: '#6B7280' } }
+              }
+            }} />
+          </div>
         </Col>
+
         <Col lg={4}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-white border-0">
-              <h6 className="mb-0 fw-bold"><FaRocket className="me-2 text-primary" />Conversion Funnel</h6>
-            </Card.Header>
-            <Card.Body className="d-flex flex-column align-items-center justify-content-center">
-              <Doughnut data={getConversionData()} options={{
-                responsive: true,
-                cutout: '70%',
-                plugins: { legend: { position: 'bottom' } }
-              }} />
-              <div className="text-center mt-3">
-                <small className="text-muted">Enrollment Rate</small>
-                <div className="fw-bold fs-4 text-success">25%</div>
+          {/* Signature element: the Pipeline Track */}
+          <div className="fdash-panel fdash-panel-h fdash-pipeline">
+            <div className="fdash-panel-header">
+              <div>
+                <h6 className="fdash-panel-title">Pipeline track</h6>
+                <span className="fdash-panel-sub">Where prospects stand</span>
               </div>
-            </Card.Body>
-          </Card>
+            </div>
+            <div className="fdash-track">
+              {pipelineStages.map((stage, idx) => (
+                <div className="fdash-track-row" key={stage.label}>
+                  <div className="fdash-track-node" style={{ '--node-color': STAGE_COLORS[idx] }} />
+                  {idx < pipelineStages.length - 1 && <div className="fdash-track-line" />}
+                  <div className="fdash-track-body">
+                    <div className="fdash-track-meta">
+                      <span className="fdash-track-label">{stage.label}</span>
+                      <span className="fdash-track-value">{stage.value}</span>
+                    </div>
+                    <div className="fdash-track-bar-bg">
+                      <div
+                        className="fdash-track-bar-fill"
+                        style={{ width: `${(stage.value / pipelineMax) * 100}%`, background: STAGE_COLORS[idx] }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="fdash-pipeline-footer">
+              <span>Enrollment rate</span>
+              <span className="fdash-pipeline-rate">25%</span>
+            </div>
+          </div>
         </Col>
       </Row>
 
-      {/* Goals & Overdue Section */}
-      <Row className="g-3">
+      {/* Goals + Quick actions */}
+      <Row className="g-3 fdash-row">
         <Col lg={8}>
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center py-3">
-              <h6 className="mb-0 fw-bold"><FaBullseye className="me-2 text-primary" />Active Goals</h6>
-              <button className="btn btn-sm btn-primary">View All</button>
-            </Card.Header>
-            <Card.Body>
-              {stats?.goals && stats.goals.length > 0 ? (
-                stats.goals.map((goal) => (
-                  <div key={goal.id} className="mb-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <div>
-                        <span className="fw-medium">{goal.title}</span>
-                        <Badge bg={goal.isBehind ? 'warning' : 'info'} className="ms-2">
-                          {goal.isBehind ? 'Behind' : 'On Track'}
-                        </Badge>
-                      </div>
-                      <span className="fw-bold">{goal.current}/{goal.target}</span>
-                    </div>
-                    <BootstrapProgressBar now={goal.progress} variant={goal.isBehind ? 'warning' : 'success'} className="rounded-pill" style={{ height: '8px' }} />
-                    <div className="d-flex justify-content-between mt-1">
-                      <small className="text-muted">{goal.daysRemaining} days remaining</small>
-                      <small className="text-muted">{Math.round(goal.progress)}% complete</small>
-                    </div>
+          <div className="fdash-panel">
+            <div className="fdash-panel-header">
+              <h6 className="fdash-panel-title"><FaBullseye /> Active goals</h6>
+              <button className="fdash-btn fdash-btn-text">View all</button>
+            </div>
+            {stats?.goals && stats.goals.length > 0 ? (
+              stats.goals.map((goal) => (
+                <div className="fdash-goal" key={goal.id}>
+                  <div className="fdash-goal-top">
+                    <span className="fdash-goal-title">
+                      {goal.title}
+                      <span className={`fdash-tag ${goal.isBehind ? 'fdash-tag-warn' : 'fdash-tag-ok'}`}>
+                        {goal.isBehind ? 'Behind' : 'On track'}
+                      </span>
+                    </span>
+                    <span className="fdash-goal-fraction">{goal.current}/{goal.target}</span>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-muted">
-                  <FaBullseye size={40} className="opacity-25 mb-2" />
-                  <p>No active goals. Set your first goal now!</p>
-                  <button className="btn btn-primary btn-sm">Set a Goal</button>
+                  <div className="fdash-goal-bar-bg">
+                    <div className="fdash-goal-bar-fill" style={{ width: `${goal.progress}%`, background: goal.isBehind ? '#E08E1D' : '#17A589' }} />
+                  </div>
+                  <div className="fdash-goal-meta">
+                    <span>{goal.daysRemaining} days remaining</span>
+                    <span>{Math.round(goal.progress)}% complete</span>
+                  </div>
                 </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={4}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-white border-0 py-3">
-              <h6 className="mb-0 fw-bold"><FaBell className="me-2 text-warning" />Quick Actions</h6>
-            </Card.Header>
-            <Card.Body>
-              <div className="d-grid gap-2">
-                {quickActions.map((action, idx) => (
-                  <button key={idx} className={`btn btn-outline-${action.color} text-start d-flex align-items-center gap-3 p-3`} onClick={() => window.location.href = action.link}>
-                    <span className={`text-${action.color} fs-5`}>{action.icon}</span>
-                    <div>
-                      <div className="fw-medium">{action.label}</div>
-                      <small className="text-muted">Click to get started</small>
-                    </div>
-                    <span className="ms-auto text-muted">→</span>
-                  </button>
-                ))}
+              ))
+            ) : (
+              <div className="fdash-empty">
+                <FaBullseye size={32} />
+                <p>No active goals yet. Set your first one.</p>
+                <button className="fdash-btn fdash-btn-solid">Set a goal</button>
               </div>
-            </Card.Body>
-          </Card>
+            )}
+          </div>
+        </Col>
+
+        <Col lg={4}>
+          <div className="fdash-panel fdash-panel-h">
+            <div className="fdash-panel-header">
+              <h6 className="fdash-panel-title">Quick actions</h6>
+            </div>
+            <div className="fdash-actions">
+              {quickActions.map((action, idx) => (
+                <button key={idx} className="fdash-action" onClick={() => window.location.href = action.link}>
+                  <span className="fdash-action-icon">{action.icon}</span>
+                  <span className="fdash-action-label">{action.label}</span>
+                  <span className="fdash-action-arrow">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </Col>
       </Row>
 
-      {/* Overdue Alert */}
+      {/* Overdue banner */}
       {stats?.overdueFollowups?.length > 0 && (
-        <Row className="mt-4">
-          <Col xs={12}>
-            <Alert variant="danger" className="border-0 shadow-sm">
-              <div className="d-flex align-items-start gap-3">
-                <div className="bg-danger bg-opacity-10 p-3 rounded-3">
-                  <FaExclamationTriangle size={24} className="text-danger" />
-                </div>
-                <div className="flex-grow-1">
-                  <Alert.Heading className="mb-1">
-                    ⚠️ {stats.overdueFollowups.length} Overdue Follow-up{stats.overdueFollowups.length > 1 ? 's' : ''}
-                  </Alert.Heading>
-                  <p className="mb-2">These follow-ups are past their due date. Take action now!</p>
-                  <div className="d-flex flex-wrap gap-2">
-                    {stats.overdueFollowups.slice(0, 3).map((item) => (
-                      <Badge key={item.id} bg="danger" className="p-2">
-                        {item.name} - {item.missedDays} day(s) overdue
-                      </Badge>
-                    ))}
-                    {stats.overdueFollowups.length > 3 && (
-                      <Badge bg="secondary">+{stats.overdueFollowups.length - 3} more</Badge>
-                    )}
-                  </div>
-                </div>
-                <button className="btn btn-danger btn-sm" onClick={() => window.location.href = '/followups'}>
-                  View All
-                </button>
-              </div>
-            </Alert>
-          </Col>
-        </Row>
+        <div className="fdash-banner">
+          <div className="fdash-banner-icon"><FaExclamationTriangle /></div>
+          <div className="fdash-banner-body">
+            <strong>{stats.overdueFollowups.length} overdue follow-up{stats.overdueFollowups.length > 1 ? 's' : ''}</strong>
+            <p>These are past their due date. Take action now.</p>
+            <div className="fdash-banner-tags">
+              {stats.overdueFollowups.slice(0, 3).map((item) => (
+                <span className="fdash-tag fdash-tag-overdue" key={item.id}>{item.name} · {item.missedDays}d</span>
+              ))}
+              {stats.overdueFollowups.length > 3 && (
+                <span className="fdash-tag">+{stats.overdueFollowups.length - 3} more</span>
+              )}
+            </div>
+          </div>
+          <button className="fdash-btn fdash-btn-solid fdash-btn-danger" onClick={() => window.location.href = '/followups'}>View all</button>
+        </div>
       )}
 
-      {/* Recent Activity Feed */}
+      {/* Recent activity timeline */}
       {stats?.recentActivity && stats.recentActivity.length > 0 && (
-        <Row className="mt-4">
-          <Col xs={12}>
-            <Card className="border-0 shadow-sm">
-              <Card.Header className="bg-white border-0 py-3">
-                <h6 className="mb-0 fw-bold"><FaClock className="me-2 text-primary" />Recent Activity</h6>
-              </Card.Header>
-              <Card.Body className="p-0">
-                <div className="list-group list-group-flush">
-                  {stats.recentActivity.slice(0, 5).map((activity, idx) => (
-                    <div key={idx} className="list-group-item d-flex align-items-center gap-3 border-0 py-3 px-4">
-                      <div className={`bg-${activity.status === 'converted' ? 'success' : 'primary'} bg-opacity-10 rounded-circle p-2`}>
-                        {activity.status === 'converted' ? <FaCheckCircle className="text-success" /> : <FaPhone className="text-primary" />}
-                      </div>
-                      <div className="flex-grow-1">
-                        <div className="fw-medium">{activity.name}</div>
-                        <small className="text-muted">{activity.lastAction}</small>
-                      </div>
-                      <small className="text-muted">{new Date(activity.updatedAt).toLocaleTimeString()}</small>
-                    </div>
-                  ))}
+        <div className="fdash-panel fdash-row">
+          <div className="fdash-panel-header">
+            <h6 className="fdash-panel-title"><FaClock /> Recent activity</h6>
+          </div>
+          <div className="fdash-timeline">
+            {stats.recentActivity.slice(0, 5).map((activity, idx) => (
+              <div className="fdash-timeline-item" key={idx}>
+                <div className={`fdash-timeline-dot ${activity.status === 'converted' ? 'is-converted' : ''}`}>
+                  {activity.status === 'converted' ? <FaCheckCircle /> : <FaPhone />}
                 </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+                <div className="fdash-timeline-body">
+                  <span className="fdash-timeline-name">{activity.name}</span>
+                  <span className="fdash-timeline-action">{activity.lastAction}</span>
+                </div>
+                <span className="fdash-timeline-time">{new Date(activity.updatedAt).toLocaleTimeString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
-      <style>{`
-        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important; }
-        .stat-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .stat-card-primary .stat-icon { color: #3b82f6; }
-        .stat-card-success .stat-icon { color: #10b981; }
-        .stat-card-warning .stat-icon { color: #f59e0b; }
-        .stat-card-info .stat-icon { color: #06b6d4; }
-        .fade-in { animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate { animation: pulse 0.3s ease; }
-        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
-      `}</style>
+      <DashboardStyles />
     </div>
+  );
+}
+
+function DashboardStyles() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+      .fdash {
+        --ink: #12182B;
+        --muted: #6B7280;
+        --canvas: #F1F3F8;
+        --surface: #FFFFFF;
+        --line: #E2E5EE;
+        --indigo: #4453D8;
+        --teal: #17A589;
+        --amber: #E08E1D;
+        --coral: #E14B3D;
+        font-family: 'Inter', sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        padding: 28px;
+        border-radius: 16px;
+      }
+      .fdash-loading { text-align: center; padding: 80px 0; color: var(--muted, #6B7280); font-family: 'Inter', sans-serif; }
+      .fdash-loading p { margin-top: 12px; }
+
+      .fdash-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+      .fdash-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--indigo); }
+      .fdash-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px; margin: 4px 0 0; }
+      .fdash-header-right { display: flex; align-items: center; gap: 12px; }
+      .fdash-date-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; display: flex; flex-direction: column; line-height: 1.2; }
+      .fdash-date-label { font-size: 11px; color: var(--muted); }
+      .fdash-date-value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+
+      .fdash-btn { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13px; border-radius: 9px; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s ease; }
+      .fdash-btn-outline { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+      .fdash-btn-outline:hover { border-color: var(--indigo); color: var(--indigo); }
+      .fdash-btn-text { background: transparent; border: none; color: var(--indigo); padding: 4px 0; }
+      .fdash-btn-solid { background: var(--indigo); border: none; color: #fff; }
+      .fdash-btn-solid:hover { opacity: 0.9; }
+      .fdash-btn-danger { background: var(--coral); }
+
+      .fdash-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+      @media (max-width: 900px) { .fdash-stat-strip { grid-template-columns: repeat(2, 1fr); } }
+      .fdash-stat-tile { background: var(--surface); border-radius: 14px; padding: 18px; border-left: 4px solid var(--tile-accent); box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+      .fdash-stat-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+      .fdash-stat-icon { color: var(--tile-accent); font-size: 17px; }
+      .fdash-trend { font-family: 'IBM Plex Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 20px; }
+      .fdash-trend-up { background: rgba(23,165,137,0.1); color: var(--teal); }
+      .fdash-trend-down { background: rgba(225,75,61,0.1); color: var(--coral); }
+      .fdash-stat-value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; }
+      .fdash-stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 6px; }
+
+      .fdash-row { margin-top: 16px !important; }
+      .fdash-panel { background: var(--surface); border-radius: 14px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+      .fdash-panel-h { height: 100%; }
+      .fdash-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+      .fdash-panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+      .fdash-panel-sub { font-size: 12px; color: var(--muted); }
+
+      .fdash-segmented { display: flex; background: var(--canvas); border-radius: 8px; padding: 3px; gap: 2px; }
+      .fdash-segment { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; border: none; background: transparent; color: var(--muted); padding: 5px 11px; border-radius: 6px; cursor: pointer; }
+      .fdash-segment.is-active { background: var(--surface); color: var(--indigo); box-shadow: 0 1px 2px rgba(18,24,43,0.08); }
+
+      /* Pipeline track */
+      .fdash-track { display: flex; flex-direction: column; }
+      .fdash-track-row { display: grid; grid-template-columns: 14px 1fr; column-gap: 14px; position: relative; padding-bottom: 22px; }
+      .fdash-track-row:last-child { padding-bottom: 0; }
+      .fdash-track-node { width: 14px; height: 14px; border-radius: 50%; background: var(--node-color); margin-top: 3px; z-index: 1; }
+      .fdash-track-line { position: absolute; left: 6px; top: 17px; bottom: 0; width: 2px; background: var(--line); }
+      .fdash-track-body { display: flex; flex-direction: column; gap: 6px; }
+      .fdash-track-meta { display: flex; justify-content: space-between; font-size: 13px; }
+      .fdash-track-label { font-weight: 500; }
+      .fdash-track-value { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+      .fdash-track-bar-bg { background: var(--canvas); border-radius: 6px; height: 6px; overflow: hidden; }
+      .fdash-track-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+      .fdash-pipeline-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+      .fdash-pipeline-rate { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; color: var(--teal); }
+
+      /* Goals */
+      .fdash-goal { padding: 14px 0; border-bottom: 1px solid var(--line); }
+      .fdash-goal:last-child { border-bottom: none; }
+      .fdash-goal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+      .fdash-goal-title { font-weight: 500; display: flex; align-items: center; gap: 8px; }
+      .fdash-goal-fraction { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+      .fdash-goal-bar-bg { background: var(--canvas); border-radius: 6px; height: 7px; overflow: hidden; }
+      .fdash-goal-bar-fill { height: 100%; border-radius: 6px; }
+      .fdash-goal-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+      .fdash-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 2px 8px; border-radius: 20px; background: rgba(68,83,216,0.08); color: var(--indigo); }
+      .fdash-tag-warn { background: rgba(224,142,29,0.12); color: var(--amber); }
+      .fdash-tag-ok { background: rgba(23,165,137,0.1); color: var(--teal); }
+      .fdash-tag-overdue { background: rgba(225,75,61,0.1); color: var(--coral); }
+
+      .fdash-empty { text-align: center; padding: 32px 0; color: var(--muted); }
+      .fdash-empty svg { opacity: 0.3; margin-bottom: 10px; }
+      .fdash-empty p { margin-bottom: 14px; font-size: 13px; }
+
+      /* Quick actions */
+      .fdash-actions { display: flex; flex-direction: column; gap: 8px; }
+      .fdash-action { display: flex; align-items: center; gap: 12px; background: var(--canvas); border: none; border-radius: 10px; padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer; transition: background 0.15s ease; }
+      .fdash-action:hover { background: #E7EAF4; }
+      .fdash-action-icon { color: var(--indigo); font-size: 14px; }
+      .fdash-action-arrow { margin-left: auto; color: var(--muted); }
+
+      /* Overdue banner */
+      .fdash-banner { display: flex; gap: 16px; align-items: flex-start; background: #FFF4F2; border: 1px solid rgba(225,75,61,0.25); border-radius: 14px; padding: 18px 20px; margin-top: 20px; }
+      .fdash-banner-icon { color: var(--coral); font-size: 20px; margin-top: 2px; }
+      .fdash-banner-body { flex: 1; }
+      .fdash-banner-body strong { font-family: 'Space Grotesk', sans-serif; font-size: 15px; }
+      .fdash-banner-body p { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
+      .fdash-banner-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+      /* Timeline */
+      .fdash-timeline { display: flex; flex-direction: column; }
+      .fdash-timeline-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+      .fdash-timeline-item:last-child { border-bottom: none; }
+      .fdash-timeline-dot { width: 32px; height: 32px; border-radius: 50%; background: rgba(68,83,216,0.1); color: var(--indigo); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+      .fdash-timeline-dot.is-converted { background: rgba(23,165,137,0.1); color: var(--teal); }
+      .fdash-timeline-body { display: flex; flex-direction: column; flex: 1; }
+      .fdash-timeline-name { font-weight: 500; font-size: 13px; }
+      .fdash-timeline-action { font-size: 12px; color: var(--muted); }
+      .fdash-timeline-time { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+    `}</style>
   );
 }
 
