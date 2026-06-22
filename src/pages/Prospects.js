@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Badge, Row, Col, Form, InputGroup, Spinner, Pagination } from 'react-bootstrap';
-import { 
-  FaPlus, FaWhatsapp, FaChartLine, FaSearch, 
+import { Table, Form, Pagination } from 'react-bootstrap';
+import {
+  FaPlus, FaWhatsapp, FaChartLine, FaSearch,
   FaFilter, FaEdit, FaTrash, FaEye, FaUserCheck,
   FaPhoneAlt, FaMapMarkerAlt, FaBriefcase,
   FaStar, FaEnvelope, FaCalendarAlt, FaMoneyBill, FaRocket,
@@ -17,7 +17,6 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://netmark-pro-backend.onrender.com/api';
 
-// Helper function to get source display name
 const getSourceDisplay = (source) => {
   const sourceMap = {
     'referral': 'referral from a friend',
@@ -28,6 +27,22 @@ const getSourceDisplay = (source) => {
     'other': 'other platform'
   };
   return sourceMap[source] || 'a mutual connection';
+};
+
+const STAGES = [
+  { key: 'lead', label: 'Lead', icon: <FaStar />, color: '#6B7280' },
+  { key: 'qualified', label: 'Qualified', icon: <FaUserCheck />, color: '#4453D8' },
+  { key: 'invited', label: 'Invited', icon: <FaEnvelope />, color: '#E08E1D' },
+  { key: 'presented', label: 'Presented', icon: <FaCalendarAlt />, color: '#7A5FE0' },
+  { key: 'negotiation', label: 'Negotiation', icon: <FaMoneyBill />, color: '#C2629A' },
+  { key: 'enrolled', label: 'Enrolled', icon: <FaRocket />, color: '#17A589' },
+];
+const STAGE_MAP = STAGES.reduce((acc, s) => ({ ...acc, [s.key]: s }), {});
+
+const getScoreColor = (score) => {
+  if (score >= 70) return '#17A589';
+  if (score >= 40) return '#E08E1D';
+  return '#6B7280';
 };
 
 function Prospects() {
@@ -81,7 +96,6 @@ function Prospects() {
     }
   };
 
-  // Personalized WhatsApp message with source
   const handleSendWhatsApp = (prospect) => {
     const name = prospect.name || 'there';
     const source = getSourceDisplay(prospect.source);
@@ -91,32 +105,9 @@ function Prospects() {
     toast.success(`Opening WhatsApp for ${name}`);
   };
 
-  const getPipelineStageBadge = (stage) => {
-    const stages = {
-      lead: { icon: <FaStar />, color: 'secondary', label: 'LEAD' },
-      qualified: { icon: <FaUserCheck />, color: 'info', label: 'QUALIFIED' },
-      invited: { icon: <FaEnvelope />, color: 'warning', label: 'INVITED' },
-      presented: { icon: <FaCalendarAlt />, color: 'primary', label: 'PRESENTED' },
-      negotiation: { icon: <FaMoneyBill />, color: 'danger', label: 'NEGOTIATION' },
-      enrolled: { icon: <FaRocket />, color: 'success', label: 'ENROLLED' }
-    };
-    const s = stages[stage] || stages.lead;
-    return (
-      <Badge bg={s.color} className={`px-2 py-1 ${s.color === 'warning' ? 'text-dark' : 'text-white'}`}>
-        {s.icon} {s.label}
-      </Badge>
-    );
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 70) return 'success';
-    if (score >= 40) return 'warning';
-    return 'secondary';
-  };
-
-  const filteredProspects = prospects.filter(p => 
-    p.name?.toLowerCase().includes(search.toLowerCase()) || 
-    p.phone?.includes(search) || 
+  const filteredProspects = prospects.filter(p =>
+    p.name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.phone?.includes(search) ||
     p.email?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -125,362 +116,288 @@ function Prospects() {
   const currentItems = filteredProspects.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredProspects.length / itemsPerPage);
 
-  const stageCounts = {
-    lead: prospects.filter(p => p.pipelineStage === 'lead').length,
-    qualified: prospects.filter(p => p.pipelineStage === 'qualified').length,
-    invited: prospects.filter(p => p.pipelineStage === 'invited').length,
-    presented: prospects.filter(p => p.pipelineStage === 'presented').length,
-    negotiation: prospects.filter(p => p.pipelineStage === 'negotiation').length,
-    enrolled: prospects.filter(p => p.pipelineStage === 'enrolled').length
-  };
+  const stageCounts = STAGES.reduce((acc, s) => ({
+    ...acc,
+    [s.key]: prospects.filter(p => p.pipelineStage === s.key).length
+  }), {});
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Loading prospects...</p>
+      <div className="fdash-loading">
+        <div className="fdash-spinner" />
+        <p>Loading prospects…</p>
+        <ProspectsStyles />
       </div>
     );
   }
 
   return (
-    <div className="fade-in">
+    <div className="fdash">
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="fdash-header">
         <div>
-          <h2><FaChartLine className="me-2 text-primary" />Prospect Management</h2>
-          <p className="text-muted mb-0">Track your prospects through the sales pipeline</p>
+          <span className="fdash-eyebrow">Pipeline</span>
+          <h1 className="fdash-title">Prospect management</h1>
+          <p className="fdash-subtitle">Track prospects as they move through your sales pipeline</p>
         </div>
-        <Button variant="primary" onClick={() => setShowForm(true)}>
-          <FaPlus className="me-2" /> Add Prospect
-        </Button>
+        <button className="fdash-btn fdash-btn-solid" onClick={() => setShowForm(true)}>
+          <FaPlus /> Add prospect
+        </button>
       </div>
 
-      {/* Pipeline Stage Summary Cards */}
-      <Row className="g-2 mb-4">
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaStar className="text-secondary mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.lead}</div>
-              <small className="text-muted">Lead</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaUserCheck className="text-info mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.qualified}</div>
-              <small className="text-muted">Qualified</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaEnvelope className="text-warning mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.invited}</div>
-              <small className="text-muted">Invited</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaCalendarAlt className="text-primary mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.presented}</div>
-              <small className="text-muted">Presented</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaMoneyBill className="text-danger mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.negotiation}</div>
-              <small className="text-muted">Negotiation</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={2} xs={6}>
-          <Card className="border-0 shadow-sm text-center">
-            <Card.Body className="py-2">
-              <FaRocket className="text-success mb-1" />
-              <div className="fw-bold fs-4">{stageCounts.enrolled}</div>
-              <small className="text-muted">Enrolled</small>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* Pipeline stage track */}
+      <div className="fdash-panel fdash-stage-track">
+        {STAGES.map((stage, idx) => (
+          <React.Fragment key={stage.key}>
+            <div className="fdash-stage-node">
+              <div className="fdash-stage-icon" style={{ color: stage.color, background: `${stage.color}1A` }}>{stage.icon}</div>
+              <div className="fdash-stage-count">{stageCounts[stage.key]}</div>
+              <div className="fdash-stage-label">{stage.label}</div>
+            </div>
+            {idx < STAGES.length - 1 && <div className="fdash-stage-connector" />}
+          </React.Fragment>
+        ))}
+      </div>
 
-      {/* Stats Cards */}
-      <Row className="g-3 mb-4">
-        <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <small className="text-muted">Total Prospects</small>
-                  <h2 className="mb-0 fw-bold">{summary.total || 0}</h2>
-                </div>
-                <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
-                  <FaChartLine className="text-primary fs-4" />
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <small className="text-muted">Qualified</small>
-                  <h2 className="mb-0 fw-bold">{summary.qualified || 0}</h2>
-                </div>
-                <div className="bg-info bg-opacity-10 p-3 rounded-circle">
-                  <FaUserCheck className="text-info fs-4" />
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <small className="text-muted">Enrolled</small>
-                  <h2 className="mb-0 fw-bold">{summary.enrolled || 0}</h2>
-                </div>
-                <div className="bg-success bg-opacity-10 p-3 rounded-circle">
-                  <FaRocket className="text-success fs-4" />
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3} sm={6}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <small>Conversion Rate</small>
-                  <h2 className="mb-0 fw-bold">
-                    {summary.total > 0 ? Math.round((stageCounts.enrolled / summary.total) * 100) : 0}%
-                  </h2>
-                </div>
-                <div className="bg-success bg-opacity-10 p-3 rounded-circle">
-                  <FaTrophy className="text-success fs-4" />
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* Stats */}
+      <div className="fdash-stat-strip">
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#4453D8' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaChartLine /></div></div>
+          <div className="fdash-stat-value">{summary.total || 0}</div>
+          <div className="fdash-stat-label">Total prospects</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#4453D8' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaUserCheck /></div></div>
+          <div className="fdash-stat-value">{summary.qualified || 0}</div>
+          <div className="fdash-stat-label">Qualified</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#17A589' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaRocket /></div></div>
+          <div className="fdash-stat-value">{summary.enrolled || 0}</div>
+          <div className="fdash-stat-label">Enrolled</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#17A589' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaTrophy /></div></div>
+          <div className="fdash-stat-value">{summary.total > 0 ? Math.round((stageCounts.enrolled / summary.total) * 100) : 0}%</div>
+          <div className="fdash-stat-label">Conversion rate</div>
+        </div>
+      </div>
 
       {/* Filters */}
-      <Card className="border-0 shadow-sm mb-4">
-        <Card.Body>
-          <Row className="g-3">
-            <Col md={6}>
-              <InputGroup>
-                <InputGroup.Text><FaSearch /></InputGroup.Text>
-                <Form.Control
-                  placeholder="Search by name, phone or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </InputGroup>
-            </Col>
-            <Col md={4}>
-              <InputGroup>
-                <InputGroup.Text><FaFilter /></InputGroup.Text>
-                <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                  <option value="all">All Status</option>
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="invited">Invited</option>
-                  <option value="enrolled">Enrolled</option>
-                </Form.Select>
-              </InputGroup>
-            </Col>
-            <Col md={2}>
-              <Button variant="outline-secondary" onClick={loadProspects} className="w-100">
-                Refresh
-              </Button>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+      <div className="fdash-panel fdash-filters">
+        <div className="fdash-search fdash-search-flex">
+          <FaSearch className="fdash-search-icon" />
+          <input
+            className="fdash-search-input"
+            placeholder="Search by name, phone or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="fdash-filter-select">
+          <FaFilter className="fdash-search-icon" />
+          <Form.Select className="fdash-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All status</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="invited">Invited</option>
+            <option value="enrolled">Enrolled</option>
+          </Form.Select>
+        </div>
+        <button className="fdash-btn fdash-btn-outline" onClick={loadProspects}>Refresh</button>
+      </div>
 
-      {/* Prospects Table */}
-      <Card className="border-0 shadow-sm">
-        <Card.Body className="p-0">
-          <div className="table-responsive">
-            <Table hover className="mb-0">
-              <thead className="bg-light">
+      {/* Table */}
+      <div className="fdash-panel fdash-table-panel">
+        <div className="table-responsive">
+          <Table hover className="fdash-table mb-0">
+            <thead>
+              <tr>
+                <th>Prospect</th>
+                <th>Contact</th>
+                <th>Location</th>
+                <th>Pipeline stage</th>
+                <th>Score</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentItems.length === 0 ? (
                 <tr>
-                  <th>Prospect</th>
-                  <th>Contact</th>
-                  <th>Location</th>
-                  <th>Pipeline Stage</th>
-                  <th>Score</th>
-                  <th>Actions</th>
+                  <td colSpan="6">
+                    <div className="fdash-empty">
+                      <p>No prospects found</p>
+                      <button className="fdash-btn fdash-btn-solid" onClick={() => setShowForm(true)}><FaPlus /> Add prospect</button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {currentItems.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center py-5">
-                      <p className="text-muted mb-0">No prospects found</p>
-                      <Button variant="primary" size="sm" className="mt-2" onClick={() => setShowForm(true)}>
-                        <FaPlus className="me-2" /> Add Prospect
-                      </Button>
-                    </td>
-                  </tr>
-                ) : (
-                  currentItems.map((prospect) => (
-                    <tr key={prospect._id} className="align-middle">
+              ) : (
+                currentItems.map((prospect) => {
+                  const stage = STAGE_MAP[prospect.pipelineStage] || STAGES[0];
+                  const score = prospect.score || 0;
+                  const scoreColor = getScoreColor(score);
+                  return (
+                    <tr key={prospect._id}>
                       <td>
-                        <div>
-                          <strong>{prospect.name}</strong>
-                          <br />
-                          <small className="text-muted">
-                            <FaBriefcase className="me-1" size={12} />
-                            {prospect.occupation || 'No occupation'}
-                          </small>
-                          <br />
-                          <small className="text-muted">
-                            <FaMapMarkerAlt className="me-1" size={12} />
-                            {prospect.location?.city || 'Location not set'}
-                          </small>
-                        </div>
+                        <strong>{prospect.name}</strong>
+                        <div className="fdash-table-meta"><FaBriefcase size={11} /> {prospect.occupation || 'No occupation'}</div>
+                        <div className="fdash-table-meta"><FaMapMarkerAlt size={11} /> {prospect.location?.city || 'Location not set'}</div>
                       </td>
                       <td>
-                        <div>
-                          <FaPhoneAlt className="me-1 text-success" size={12} /> {prospect.phone}
-                        </div>
-                        {prospect.email && (
-                          <div>
-                            <FaEnvelope className="me-1 text-info" size={12} /> 
-                            <small>{prospect.email}</small>
-                          </div>
-                        )}
+                        <div className="fdash-table-meta fdash-contact-row"><FaPhoneAlt size={11} style={{ color: '#17A589' }} /> <span className="fdash-mono">{prospect.phone}</span></div>
+                        {prospect.email && <div className="fdash-table-meta fdash-contact-row"><FaEnvelope size={11} style={{ color: '#4453D8' }} /> {prospect.email}</div>}
                       </td>
                       <td>{prospect.location?.city || 'N/A'}</td>
-                      <td>{getPipelineStageBadge(prospect.pipelineStage)}</td>
                       <td>
-                        <div className="text-center">
-                          <span className={`fw-bold text-${getScoreColor(prospect.score)}`}>
-                            {prospect.score || 0}%
-                          </span>
-                          <div className="progress mt-1" style={{ height: '3px' }}>
-                            <div 
-                              className={`progress-bar bg-${getScoreColor(prospect.score)}`}
-                              style={{ width: `${prospect.score || 0}%` }}
-                            />
-                          </div>
+                        <span className="fdash-tag" style={{ color: stage.color, background: `${stage.color}1A` }}>
+                          {stage.icon} {stage.label}
+                        </span>
+                      </td>
+                      <td style={{ minWidth: 90 }}>
+                        <div className="fdash-score-value fdash-mono" style={{ color: scoreColor }}>{score}%</div>
+                        <div className="fdash-track-bar-bg">
+                          <div className="fdash-track-bar-fill" style={{ width: `${score}%`, background: scoreColor }} />
                         </div>
                       </td>
                       <td>
-                        <div className="d-flex gap-1 flex-wrap">
-                          {/* WhatsApp Button with personalized message */}
-                          <Button 
-                            variant="success" 
-                            size="sm" 
-                            onClick={() => handleSendWhatsApp(prospect)}
-                            title="Send WhatsApp"
-                          >
-                            <FaWhatsapp />
-                          </Button>
-                          
-                          {/* Rocket Button */}
-                          <Button 
-                            variant="info" 
-                            size="sm" 
-                            onClick={() => {
-                              setSelectedProspect(prospect);
-                              setShowStageModal(true);
-                            }}
-                            title="Update Pipeline Stage"
-                          >
-                            <FaRocket />
-                          </Button>
-                          
-                          {/* View Details */}
-                          <Button 
-                            variant="primary" 
-                            size="sm" 
-                            onClick={() => {
-                              setSelectedProspect(prospect);
-                              setShowDetailsModal(true);
-                            }}
-                            title="View Details"
-                          >
-                            <FaEye />
-                          </Button>
-                          
-                          {/* Edit */}
-                          <Button 
-                            variant="warning" 
-                            size="sm" 
-                            onClick={() => {
-                              setSelectedProspect(prospect);
-                              setShowEditModal(true);
-                            }}
-                            title="Edit Prospect"
-                          >
-                            <FaEdit />
-                          </Button>
-                          
-                          {/* Delete */}
-                          <Button 
-                            variant="danger" 
-                            size="sm" 
-                            onClick={() => {
-                              setSelectedProspect(prospect);
-                              setShowDeleteModal(true);
-                            }}
-                            title="Delete Prospect"
-                          >
-                            <FaTrash />
-                          </Button>
+                        <div className="fdash-icon-actions">
+                          <button className="fdash-icon-btn fdash-icon-btn-wa" title="Send WhatsApp" onClick={() => handleSendWhatsApp(prospect)}><FaWhatsapp /></button>
+                          <button className="fdash-icon-btn fdash-icon-btn-indigo" title="Update pipeline stage" onClick={() => { setSelectedProspect(prospect); setShowStageModal(true); }}><FaRocket /></button>
+                          <button className="fdash-icon-btn fdash-icon-btn-slate" title="View details" onClick={() => { setSelectedProspect(prospect); setShowDetailsModal(true); }}><FaEye /></button>
+                          <button className="fdash-icon-btn fdash-icon-btn-amber" title="Edit prospect" onClick={() => { setSelectedProspect(prospect); setShowEditModal(true); }}><FaEdit /></button>
+                          <button className="fdash-icon-btn fdash-icon-btn-coral" title="Delete prospect" onClick={() => { setSelectedProspect(prospect); setShowDeleteModal(true); }}><FaTrash /></button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </div>
-        </Card.Body>
+                  );
+                })
+              )}
+            </tbody>
+          </Table>
+        </div>
         {totalPages > 1 && (
-          <Card.Footer className="bg-white">
-            <div className="d-flex justify-content-between align-items-center">
-              <small className="text-muted">
-                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredProspects.length)} of {filteredProspects.length} prospects
-              </small>
-              <Pagination size="sm" className="mb-0">
-                <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
-                <Pagination.Prev onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} />
-                <Pagination.Next onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} />
-                <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
-              </Pagination>
-            </div>
-          </Card.Footer>
+          <div className="fdash-table-footer">
+            <small className="fdash-pagination-info">
+              Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredProspects.length)} of {filteredProspects.length} prospects
+            </small>
+            <Pagination size="sm" className="fdash-pagination mb-0">
+              <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+              <Pagination.Prev onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} />
+              <Pagination.Next onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} />
+              <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
+            </Pagination>
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Modals */}
       <ProspectForm show={showForm} onHide={() => setShowForm(false)} onProspectAdded={loadProspects} />
       <ProspectDetailsModal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} prospect={selectedProspect} onEdit={(p) => { setSelectedProspect(p); setShowEditModal(true); }} onDelete={(p) => { setSelectedProspect(p); setShowDeleteModal(true); }} onWhatsApp={handleSendWhatsApp} />
       <EditProspectModal show={showEditModal} onHide={() => setShowEditModal(false)} prospect={selectedProspect} onProspectUpdated={loadProspects} />
       <StageManager show={showStageModal} onHide={() => setShowStageModal(false)} prospect={selectedProspect} onUpdate={loadProspects} />
-      <ConfirmationModal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} onConfirm={handleDelete} title="Delete Prospect" message={`Delete ${selectedProspect?.name}?`} confirmText="Delete" variant="danger" />
+      <ConfirmationModal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} onConfirm={handleDelete} title="Delete prospect" message={`Delete ${selectedProspect?.name}?`} confirmText="Delete" variant="danger" />
+
+      <ProspectsStyles />
     </div>
+  );
+}
+
+function ProspectsStyles() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+      .fdash {
+        --ink: #12182B;
+        --muted: #6B7280;
+        --canvas: #F1F3F8;
+        --surface: #FFFFFF;
+        --line: #E2E5EE;
+        --indigo: #4453D8;
+        --teal: #17A589;
+        --amber: #E08E1D;
+        --coral: #E14B3D;
+        font-family: 'Inter', sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        padding: 28px;
+        border-radius: 16px;
+      }
+      .fdash-loading { text-align: center; padding: 80px 0; color: #6B7280; font-family: 'Inter', sans-serif; }
+      .fdash-spinner { width: 32px; height: 32px; margin: 0 auto; border: 3px solid #E2E5EE; border-top-color: #4453D8; border-radius: 50%; animation: fdash-spin 0.8s linear infinite; }
+      @keyframes fdash-spin { to { transform: rotate(360deg); } }
+
+      .fdash-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 22px; }
+      .fdash-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--indigo); }
+      .fdash-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; margin: 4px 0 2px; }
+      .fdash-subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+      .fdash-mono { font-family: 'IBM Plex Mono', monospace; }
+
+      .fdash-btn { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13px; border-radius: 9px; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s ease; border: none; white-space: nowrap; }
+      .fdash-btn-outline { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+      .fdash-btn-outline:hover { border-color: var(--indigo); color: var(--indigo); }
+      .fdash-btn-solid { background: var(--indigo); color: #fff; }
+      .fdash-btn-solid:hover { opacity: 0.9; }
+
+      .fdash-panel { background: var(--surface); border-radius: 14px; box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+
+      /* Pipeline stage track */
+      .fdash-stage-track { display: flex; align-items: center; padding: 18px 20px; margin-bottom: 16px; overflow-x: auto; }
+      .fdash-stage-node { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 84px; }
+      .fdash-stage-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+      .fdash-stage-count { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; }
+      .fdash-stage-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+      .fdash-stage-connector { flex: 1; height: 2px; background: var(--line); min-width: 16px; margin: 0 4px; margin-bottom: 22px; }
+
+      .fdash-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+      @media (max-width: 900px) { .fdash-stat-strip { grid-template-columns: repeat(2, 1fr); } }
+      .fdash-stat-tile { background: var(--surface); border-radius: 14px; padding: 16px 18px; border-left: 4px solid var(--tile-accent); box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+      .fdash-stat-top { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+      .fdash-stat-icon { color: var(--tile-accent); font-size: 16px; opacity: 0.7; }
+      .fdash-stat-value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; }
+      .fdash-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 6px; }
+
+      .fdash-filters { display: flex; gap: 12px; padding: 16px 18px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+      .fdash-search { display: flex; align-items: center; gap: 10px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+      .fdash-search-flex { flex: 1; min-width: 220px; }
+      .fdash-search-icon { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+      .fdash-search-input { border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 13px; flex: 1; background: transparent; color: var(--ink); }
+      .fdash-filter-select { display: flex; align-items: center; gap: 8px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px; min-width: 170px; }
+      .fdash-select { border: none !important; background: transparent !important; box-shadow: none !important; font-size: 13px; padding: 6px 4px !important; }
+
+      .fdash-table-panel { overflow: hidden; padding: 0; }
+      .fdash-table { font-family: 'Inter', sans-serif; font-size: 13px; }
+      .fdash-table thead th { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding: 14px 16px; background: var(--canvas); }
+      .fdash-table tbody td { padding: 14px 16px; vertical-align: middle; border-bottom: 1px solid var(--line); }
+      .fdash-table tbody tr:last-child td { border-bottom: none; }
+      .fdash-table-meta { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+      .fdash-contact-row { color: var(--ink); font-size: 12.5px; }
+
+      .fdash-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+
+      .fdash-score-value { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+      .fdash-track-bar-bg { background: var(--canvas); border-radius: 6px; height: 4px; overflow: hidden; }
+      .fdash-track-bar-fill { height: 100%; border-radius: 6px; }
+
+      .fdash-icon-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      .fdash-icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: #fff; transition: opacity 0.15s ease; }
+      .fdash-icon-btn:hover { opacity: 0.85; }
+      .fdash-icon-btn-wa { background: #25D366; }
+      .fdash-icon-btn-indigo { background: var(--indigo); }
+      .fdash-icon-btn-slate { background: #5B6478; }
+      .fdash-icon-btn-amber { background: var(--amber); }
+      .fdash-icon-btn-coral { background: var(--coral); }
+
+      .fdash-empty { text-align: center; padding: 48px 0; color: var(--muted); }
+      .fdash-empty p { margin-bottom: 12px; font-size: 13px; }
+
+      .fdash-table-footer { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; gap: 10px; }
+      .fdash-pagination-info { color: var(--muted); font-size: 12px; }
+      .fdash-pagination .page-link { border: 1px solid var(--line); color: var(--ink); }
+      .fdash-pagination .page-item.active .page-link { background: var(--indigo); border-color: var(--indigo); }
+      .fdash-pagination .page-link:hover { color: var(--indigo); }
+    `}</style>
   );
 }
 
