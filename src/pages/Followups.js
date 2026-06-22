@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Table, Button, Card, Modal, Form, Row, Col, Badge, InputGroup, Tabs, Tab, ProgressBar, Alert } from 'react-bootstrap';
-import { 
-  FaPlus, FaWhatsapp, FaCheck, FaTrash, FaSearch, FaCalendarAlt, 
+import { Table, Modal, Form, Row, Col, Tabs, Tab } from 'react-bootstrap';
+import {
+  FaPlus, FaWhatsapp, FaCheck, FaTrash, FaSearch, FaCalendarAlt,
   FaClock, FaMoneyBill, FaWallet, FaChartLine, FaPercent,
   FaEdit, FaStar, FaGem, FaCrown, FaRocket, FaCheckCircle
 } from 'react-icons/fa';
@@ -11,14 +11,13 @@ import PaymentOptions from '../components/PaymentOptions';
 import toast from 'react-hot-toast';
 
 const PACKAGES = [
-  { name: 'ENTRIVERSE', price: 29888, accounts: 1, icon: <FaStar />, color: 'info' },
-  { name: 'NEOVERSE', price: 42000, accounts: 3, icon: <FaRocket />, color: 'primary', recommended: true },
-  { name: 'TECHNOVERSE', price: 123900, accounts: 7, icon: <FaGem />, color: 'warning' },
-  { name: 'DIGIVERSE', price: 254200, accounts: 15, icon: <FaCrown />, color: 'danger' },
-  { name: 'MEGAVERSE', price: 505100, accounts: 31, icon: <FaCrown />, color: 'dark' }
+  { name: 'ENTRIVERSE', price: 29888, accounts: 1, icon: <FaStar />, accent: '#4453D8' },
+  { name: 'NEOVERSE', price: 42000, accounts: 3, icon: <FaRocket />, accent: '#17A589', recommended: true },
+  { name: 'TECHNOVERSE', price: 123900, accounts: 7, icon: <FaGem />, accent: '#E08E1D' },
+  { name: 'DIGIVERSE', price: 254200, accounts: 15, icon: <FaCrown />, accent: '#C2629A' },
+  { name: 'MEGAVERSE', price: 505100, accounts: 31, icon: <FaCrown />, accent: '#12182B' }
 ];
 
-// Helper function to get source display name
 const getSourceDisplay = (source) => {
   const sourceMap = {
     'referral': 'referral from a friend',
@@ -29,6 +28,18 @@ const getSourceDisplay = (source) => {
     'other': 'other platform'
   };
   return sourceMap[source] || 'a mutual connection';
+};
+
+const CATEGORY_STYLE = {
+  hot: { color: '#E14B3D', label: 'Hot' },
+  warm: { color: '#E08E1D', label: 'Warm' },
+  cold: { color: '#4453D8', label: 'Cold' },
+};
+
+const PAYMENT_STYLE = {
+  paid: { color: '#17A589', label: 'Paid' },
+  partial: { color: '#E08E1D', label: 'Partial' },
+  pending: { color: '#E14B3D', label: 'Pending' },
 };
 
 function Followups() {
@@ -51,7 +62,6 @@ function Followups() {
     name: '', phone: '', email: '', category: 'warm', nextCallDate: '', notes: '', totalAmount: ''
   });
 
-  // Personalized WhatsApp message with source
   const handleWhatsAppWithMessage = (followup) => {
     const name = followup.name || 'there';
     const source = getSourceDisplay(followup.source);
@@ -110,11 +120,11 @@ function Followups() {
 
   const handleReschedule = async () => {
     if (!selectedId) return;
-    
+
     setRescheduleLoading(true);
     try {
       let url, body, method;
-      
+
       if (rescheduleData.daysToAdd) {
         url = `${process.env.REACT_APP_API_URL}/followups/${selectedId}/quick-reschedule`;
         body = JSON.stringify({ option: rescheduleData.daysToAdd });
@@ -131,14 +141,14 @@ function Followups() {
         setRescheduleLoading(false);
         return;
       }
-      
+
       const token = localStorage.getItem('token');
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: body
       });
-      
+
       const data = await response.json();
       if (data.success) {
         toast.success(data.message);
@@ -156,9 +166,7 @@ function Followups() {
     }
   };
 
-  // Keep original whatsappClick for tracking, but we'll use our custom message for opening
   const handleWhatsAppClick = async (id) => {
-    // Just track the click - the actual opening is done by handleWhatsAppWithMessage
     await whatsappClick(id);
   };
 
@@ -179,14 +187,8 @@ function Followups() {
     window.location.reload();
   };
 
-  const getPaymentBadge = (status) => {
-    const variants = { paid: 'success', partial: 'warning', pending: 'danger' };
-    const labels = { paid: '✅ Paid', partial: '⚠️ Partial', pending: '⏳ Pending' };
-    return <Badge bg={variants[status] || 'secondary'}>{labels[status] || status}</Badge>;
-  };
-
-  const filteredFollowups = followups.filter(f => 
-    f.name?.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredFollowups = followups.filter(f =>
+    f.name?.toLowerCase().includes(search.toLowerCase()) ||
     (f.phone && f.phone.includes(search))
   );
 
@@ -199,177 +201,216 @@ function Followups() {
   };
 
   if (loading) {
-    return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
+    return (
+      <div className="fdash-loading">
+        <div className="fdash-spinner" />
+        <p>Loading follow-ups…</p>
+        <FollowupsStyles />
+      </div>
+    );
   }
 
   return (
-    <div className="fade-in">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Follow-up Management</h2>
-        <Button variant="primary" onClick={() => setShowModal(true)}><FaPlus className="me-2" /> Add Follow-up</Button>
+    <div className="fdash">
+      {/* Header */}
+      <div className="fdash-header">
+        <div>
+          <span className="fdash-eyebrow">Pipeline</span>
+          <h1 className="fdash-title">Follow-up management</h1>
+        </div>
+        <button className="fdash-btn fdash-btn-solid" onClick={() => setShowModal(true)}>
+          <FaPlus /> Add follow-up
+        </button>
       </div>
 
-      <Row className="g-3 mb-4">
-        <Col md={3}><Card className="bg-success text-white"><Card.Body><div className="d-flex justify-content-between"><div><small>Paid</small><h3 className="mb-0">{stats.paid}</h3></div><FaWallet size={30} className="opacity-50" /></div></Card.Body></Card></Col>
-        <Col md={3}><Card className="bg-warning text-dark"><Card.Body><div className="d-flex justify-content-between"><div><small>Partial</small><h3 className="mb-0">{stats.partial}</h3></div><FaPercent size={30} className="opacity-50" /></div></Card.Body></Card></Col>
-        <Col md={3}><Card className="bg-danger text-white"><Card.Body><div className="d-flex justify-content-between"><div><small>Pending</small><h3 className="mb-0">{stats.pending}</h3></div><FaClock size={30} className="opacity-50" /></div></Card.Body></Card></Col>
-        <Col md={3}><Card className="bg-info text-white"><Card.Body><div className="d-flex justify-content-between"><div><small>Revenue</small><h3 className="mb-0">KSh {stats.totalRevenue.toLocaleString()}</h3></div><FaChartLine size={30} className="opacity-50" /></div></Card.Body></Card></Col>
-      </Row>
+      {/* Stat strip */}
+      <div className="fdash-stat-strip">
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#17A589' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaWallet /></div></div>
+          <div className="fdash-stat-value">{stats.paid}</div>
+          <div className="fdash-stat-label">Paid</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#E08E1D' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaPercent /></div></div>
+          <div className="fdash-stat-value">{stats.partial}</div>
+          <div className="fdash-stat-label">Partial</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#E14B3D' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaClock /></div></div>
+          <div className="fdash-stat-value">{stats.pending}</div>
+          <div className="fdash-stat-label">Pending</div>
+        </div>
+        <div className="fdash-stat-tile" style={{ '--tile-accent': '#4453D8' }}>
+          <div className="fdash-stat-top"><div className="fdash-stat-icon"><FaChartLine /></div></div>
+          <div className="fdash-stat-value fdash-stat-value-sm">KSh {stats.totalRevenue.toLocaleString()}</div>
+          <div className="fdash-stat-label">Revenue</div>
+        </div>
+      </div>
 
-      <Row className="mb-4"><Col md={6}><InputGroup><InputGroup.Text><FaSearch /></InputGroup.Text><Form.Control placeholder="Search by name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} /></InputGroup></Col></Row>
+      {/* Search */}
+      <div className="fdash-search">
+        <FaSearch className="fdash-search-icon" />
+        <input
+          className="fdash-search-input"
+          placeholder="Search by name or phone…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-      <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-3">
-        <Tab eventKey="followups" title="All Follow-ups">
-          <Card className="shadow-sm border-0">
-            <Card.Body className="p-0">
-              <div className="table-responsive">
-                <Table hover className="mb-0">
-                  <thead className="bg-light">
-                    <tr>
-                      <th>Name</th>
-                      <th>Phone</th>
-                      <th>Category</th>
-                      <th>Next Call</th>
-                      <th>Payment</th>
-                      <th>Progress</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredFollowups.map((f) => {
-                      const paidAmount = f.amountPaid || 0;
-                      const totalAmount = f.totalAmount || 0;
-                      const progressPercent = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-                      return (
-                        <tr key={f._id} className={new Date(f.nextCallDate) < new Date() ? 'table-danger' : ''}>
-                          <td>
-                            <div>
-                              <strong>{f.name}</strong>
-                              {f.notes && <><br /><small className="text-muted">{f.notes.substring(0, 30)}</small></>}
-                            </div>
-                          </td>
-                          <td>{f.phone}</td>
-                          <td><Badge bg={f.category === 'hot' ? 'danger' : f.category === 'warm' ? 'warning' : 'secondary'}>{f.category}</Badge></td>
-                          <td><div className="d-flex align-items-center"><FaCalendarAlt className="me-2 text-muted" />{new Date(f.nextCallDate).toLocaleDateString()}</div></td>
-                          <td>{getPaymentBadge(f.paymentStatus)}</td>
-                          <td>
-                            <div className="d-flex justify-content-between small mb-1">
-                              <span>KSh {paidAmount.toLocaleString()}</span>
-                              <span>/ KSh {totalAmount.toLocaleString()}</span>
-                            </div>
-                            <ProgressBar now={progressPercent} style={{ height: '8px' }} className="mt-1" />
-                            <small className="text-muted d-block mt-1">{progressPercent.toFixed(0)}% paid</small>
-                          </td>
-                          <td>
-                            <div className="d-flex flex-wrap gap-1">
-                              {/* WhatsApp button with personalized message */}
-                              <Button 
-                                variant="success" 
-                                size="sm" 
-                                onClick={() => {
-                                  handleWhatsAppClick(f._id); // track click
-                                  handleWhatsAppWithMessage(f); // open with custom message
-                                }}
-                              >
-                                <FaWhatsapp />
-                              </Button>
-                              <Button variant="info" size="sm" onClick={() => handleMarkFollowed(f._id)}><FaCheck /></Button>
-                              <Button variant="warning" size="sm" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowRescheduleModal(true); }}><FaClock /></Button>
-                              <Button variant="primary" size="sm" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowPaymentModal(true); }}><FaMoneyBill /></Button>
-                              <Button variant="danger" size="sm" onClick={() => { setSelectedId(f._id); setShowDeleteModal(true); }}><FaTrash /></Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              </div>
-            </Card.Body>
-          </Card>
+      <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="fdash-tabs">
+        <Tab eventKey="followups" title="All follow-ups">
+          <div className="fdash-panel fdash-table-panel">
+            <div className="table-responsive">
+              <Table hover className="fdash-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Category</th>
+                    <th>Next call</th>
+                    <th>Payment</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFollowups.map((f) => {
+                    const paidAmount = f.amountPaid || 0;
+                    const totalAmount = f.totalAmount || 0;
+                    const progressPercent = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+                    const isOverdue = new Date(f.nextCallDate) < new Date();
+                    const cat = CATEGORY_STYLE[f.category] || { color: '#6B7280', label: f.category };
+                    const pay = PAYMENT_STYLE[f.paymentStatus] || { color: '#6B7280', label: f.paymentStatus };
+                    return (
+                      <tr key={f._id} className={isOverdue ? 'fdash-row-overdue' : ''}>
+                        <td>
+                          <strong>{f.name}</strong>
+                          {f.notes && <div className="fdash-table-note">{f.notes.substring(0, 30)}</div>}
+                        </td>
+                        <td className="fdash-mono">{f.phone}</td>
+                        <td><span className="fdash-tag" style={{ color: cat.color, background: `${cat.color}1A` }}>{cat.label}</span></td>
+                        <td>
+                          <div className="fdash-table-date">
+                            <FaCalendarAlt />
+                            <span className="fdash-mono">{new Date(f.nextCallDate).toLocaleDateString()}</span>
+                          </div>
+                        </td>
+                        <td><span className="fdash-tag" style={{ color: pay.color, background: `${pay.color}1A` }}>{pay.label}</span></td>
+                        <td style={{ minWidth: 140 }}>
+                          <div className="fdash-progress-meta">
+                            <span className="fdash-mono">KSh {paidAmount.toLocaleString()}</span>
+                            <span className="fdash-mono">/ {totalAmount.toLocaleString()}</span>
+                          </div>
+                          <div className="fdash-track-bar-bg">
+                            <div className="fdash-track-bar-fill" style={{ width: `${progressPercent}%`, background: pay.color }} />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="fdash-icon-actions">
+                            <button className="fdash-icon-btn fdash-icon-btn-wa" title="WhatsApp" onClick={() => { handleWhatsAppClick(f._id); handleWhatsAppWithMessage(f); }}><FaWhatsapp /></button>
+                            <button className="fdash-icon-btn fdash-icon-btn-teal" title="Mark followed" onClick={() => handleMarkFollowed(f._id)}><FaCheck /></button>
+                            <button className="fdash-icon-btn fdash-icon-btn-amber" title="Reschedule" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowRescheduleModal(true); }}><FaClock /></button>
+                            <button className="fdash-icon-btn fdash-icon-btn-indigo" title="Payment" onClick={() => { setSelectedId(f._id); setSelectedFollowup(f); setShowPaymentModal(true); }}><FaMoneyBill /></button>
+                            <button className="fdash-icon-btn fdash-icon-btn-coral" title="Delete" onClick={() => { setSelectedId(f._id); setShowDeleteModal(true); }}><FaTrash /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </div>
+          </div>
         </Tab>
       </Tabs>
 
       {/* Add Follow-up Modal */}
-      <Modal show={showModal} onHide={() => { setShowModal(false); setSelectedPackage(null); }} size="lg" centered>
-        <Modal.Header closeButton><Modal.Title><FaPlus className="me-2" />Add Follow-up</Modal.Title></Modal.Header>
+      <Modal show={showModal} onHide={() => { setShowModal(false); setSelectedPackage(null); }} size="lg" centered dialogClassName="fdash-modal">
+        <Modal.Header closeButton><Modal.Title className="fdash-modal-title"><FaPlus /> Add follow-up</Modal.Title></Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Alert variant="info" className="small"><strong>Select Investment Package</strong></Alert>
-            <div className="mb-4">
-              <Form.Label className="fw-bold">Select Package</Form.Label>
-              <Row className="g-2">
-                {PACKAGES.map((pkg, idx) => (
-                  <Col md={4} lg={2.4} key={idx}>
-                    <div className={`border rounded p-2 text-center cursor-pointer ${selectedPackage?.name === pkg.name ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary'}`} style={{ cursor: 'pointer' }} onClick={() => handleSelectPackage(pkg)}>
-                      <div className="fs-2">{pkg.icon}</div>
-                      <div className="fw-bold small">{pkg.name}</div>
-                      <div className="text-primary fw-bold">KSh {pkg.price.toLocaleString()}</div>
-                      <div className="small text-muted">{pkg.accounts} Acc</div>
-                      {selectedPackage?.name === pkg.name && <FaCheckCircle className="text-primary" />}
-                    </div>
-                  </Col>
-                ))}
-              </Row>
+            <div className="fdash-modal-section-label">Select investment package</div>
+            <div className="fdash-package-grid">
+              {PACKAGES.map((pkg, idx) => {
+                const active = selectedPackage?.name === pkg.name;
+                return (
+                  <div
+                    key={idx}
+                    className={`fdash-package-card ${active ? 'is-active' : ''}`}
+                    style={{ '--pkg-accent': pkg.accent }}
+                    onClick={() => handleSelectPackage(pkg)}
+                  >
+                    {pkg.recommended && <span className="fdash-package-flag">Popular</span>}
+                    <div className="fdash-package-icon">{pkg.icon}</div>
+                    <div className="fdash-package-name">{pkg.name}</div>
+                    <div className="fdash-package-price fdash-mono">KSh {pkg.price.toLocaleString()}</div>
+                    <div className="fdash-package-accounts">{pkg.accounts} acc</div>
+                    {active && <FaCheckCircle className="fdash-package-check" />}
+                  </div>
+                );
+              })}
             </div>
-            <hr />
+
+            <div className="fdash-modal-divider" />
             <Row>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Name *</Form.Label><Form.Control type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Phone *</Form.Label><Form.Control type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="254712345678" /></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Category</Form.Label><Form.Select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot"> Hot</option><option value="warm"> Warm</option><option value="cold">❄️ Cold</option></Form.Select></Form.Group></Col>
-              <Col md={6}><Form.Group className="mb-3"><Form.Label>Next Call Date *</Form.Label><Form.Control type="date" required value={formData.nextCallDate} onChange={(e) => setFormData({...formData, nextCallDate: e.target.value})} /></Form.Group></Col>
-              <Col md={12}><Form.Group className="mb-3"><Form.Label>Total Amount (KSh)</Form.Label><Form.Control type="number" value={formData.totalAmount} onChange={(e) => setFormData({...formData, totalAmount: e.target.value})} placeholder="Enter amount or select package" disabled={!!selectedPackage} /></Form.Group></Col>
-              <Col md={12}><Form.Group className="mb-3"><Form.Label>Notes</Form.Label><Form.Control as="textarea" rows={2} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} /></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Name *</Form.Label><Form.Control className="fdash-input" type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Phone *</Form.Label><Form.Control className="fdash-input" type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="254712345678" /></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Email</Form.Label><Form.Control className="fdash-input" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Category</Form.Label><Form.Select className="fdash-input" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}><option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">Cold</option></Form.Select></Form.Group></Col>
+              <Col md={6}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Next call date *</Form.Label><Form.Control className="fdash-input" type="date" required value={formData.nextCallDate} onChange={(e) => setFormData({...formData, nextCallDate: e.target.value})} /></Form.Group></Col>
+              <Col md={12}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Total amount (KSh)</Form.Label><Form.Control className="fdash-input" type="number" value={formData.totalAmount} onChange={(e) => setFormData({...formData, totalAmount: e.target.value})} placeholder="Enter amount or select package above" disabled={!!selectedPackage} /></Form.Group></Col>
+              <Col md={12}><Form.Group className="mb-3"><Form.Label className="fdash-form-label">Notes</Form.Label><Form.Control className="fdash-input" as="textarea" rows={2} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} /></Form.Group></Col>
             </Row>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => { setShowModal(false); setSelectedPackage(null); }}>Cancel</Button>
-            <Button variant="primary" type="submit">Add Prospect</Button>
+            <button type="button" className="fdash-btn fdash-btn-outline" onClick={() => { setShowModal(false); setSelectedPackage(null); }}>Cancel</button>
+            <button type="submit" className="fdash-btn fdash-btn-solid">Add prospect</button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       {/* Set Amount Modal */}
-      <Modal show={showAmountModal} onHide={() => setShowAmountModal(false)} centered>
-        <Modal.Header closeButton><Modal.Title><FaEdit className="me-2" />Set Package for {selectedFollowup?.name}</Modal.Title></Modal.Header>
+      <Modal show={showAmountModal} onHide={() => setShowAmountModal(false)} centered dialogClassName="fdash-modal">
+        <Modal.Header closeButton><Modal.Title className="fdash-modal-title"><FaEdit /> Set package for {selectedFollowup?.name}</Modal.Title></Modal.Header>
         <Modal.Body>
-          <Alert variant="info">Select a package:</Alert>
+          <div className="fdash-modal-section-label">Select a package</div>
           <Row className="mb-3 g-2">
             {PACKAGES.map((pkg, idx) => (
               <Col md={6} key={idx}>
-                <Button variant="outline-primary" className="w-100 text-start" onClick={() => setAmountToSet(pkg.price.toString())}>
-                  <strong>{pkg.name}</strong><br />
-                  <small>KSh {pkg.price.toLocaleString()}</small>
-                </Button>
+                <button type="button" className="fdash-package-pick" style={{ '--pkg-accent': pkg.accent }} onClick={() => setAmountToSet(pkg.price.toString())}>
+                  <strong>{pkg.name}</strong>
+                  <span className="fdash-mono">KSh {pkg.price.toLocaleString()}</span>
+                </button>
               </Col>
             ))}
           </Row>
-          <Form.Group><Form.Label>Custom Amount</Form.Label><Form.Control type="number" value={amountToSet} onChange={(e) => setAmountToSet(e.target.value)} placeholder="Enter amount" autoFocus /></Form.Group>
+          <Form.Group><Form.Label className="fdash-form-label">Custom amount</Form.Label><Form.Control className="fdash-input" type="number" value={amountToSet} onChange={(e) => setAmountToSet(e.target.value)} placeholder="Enter amount" autoFocus /></Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAmountModal(false)}>Cancel</Button>
-          <Button variant="primary" onClick={handleSetAmount}>Set Amount</Button>
+          <button className="fdash-btn fdash-btn-outline" onClick={() => setShowAmountModal(false)}>Cancel</button>
+          <button className="fdash-btn fdash-btn-solid" onClick={handleSetAmount}>Set amount</button>
         </Modal.Footer>
       </Modal>
 
       {/* Reschedule Modal */}
-      <Modal show={showRescheduleModal} onHide={() => setShowRescheduleModal(false)} centered>
-        <Modal.Header closeButton><Modal.Title><FaClock className="me-2" />Reschedule Follow-up</Modal.Title></Modal.Header>
+      <Modal show={showRescheduleModal} onHide={() => setShowRescheduleModal(false)} centered dialogClassName="fdash-modal">
+        <Modal.Header closeButton><Modal.Title className="fdash-modal-title"><FaClock /> Reschedule follow-up</Modal.Title></Modal.Header>
         <Modal.Body>
-          <p><strong>{selectedFollowup?.name}</strong> - Current: {selectedFollowup && new Date(selectedFollowup.nextCallDate).toLocaleDateString()}</p>
-          <Form.Group><Form.Label>Quick Options</Form.Label><div className="d-grid gap-2">
-            <Button variant="outline-primary" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'tomorrow', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>Tomorrow</Button>
-            <Button variant="outline-primary" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'in_3_days', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>In 3 Days</Button>
-            <Button variant="outline-primary" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'in_1_week', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>In 1 Week</Button>
-          </div></Form.Group>
-          <hr />
-          <Form.Group><Form.Label>Custom Date</Form.Label><Form.Control type="date" value={rescheduleData.nextCallDate} onChange={(e) => setRescheduleData({...rescheduleData, nextCallDate: e.target.value, daysToAdd: ''})} min={new Date().toISOString().split('T')[0]} /></Form.Group>
-          <Form.Group><Form.Label>Reason</Form.Label><Form.Control as="textarea" rows={2} value={rescheduleData.reason} onChange={(e) => setRescheduleData({...rescheduleData, reason: e.target.value})} /></Form.Group>
+          <p className="fdash-modal-note"><strong>{selectedFollowup?.name}</strong> — current: <span className="fdash-mono">{selectedFollowup && new Date(selectedFollowup.nextCallDate).toLocaleDateString()}</span></p>
+          <div className="fdash-modal-section-label">Quick options</div>
+          <div className="d-grid gap-2 mb-3">
+            <button className="fdash-btn fdash-btn-outline" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'tomorrow', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>Tomorrow</button>
+            <button className="fdash-btn fdash-btn-outline" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'in_3_days', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>In 3 days</button>
+            <button className="fdash-btn fdash-btn-outline" onClick={() => { setRescheduleData({ ...rescheduleData, daysToAdd: 'in_1_week', nextCallDate: '' }); setTimeout(handleReschedule, 100); }}>In 1 week</button>
+          </div>
+          <div className="fdash-modal-divider" />
+          <Form.Group className="mb-3"><Form.Label className="fdash-form-label">Custom date</Form.Label><Form.Control className="fdash-input" type="date" value={rescheduleData.nextCallDate} onChange={(e) => setRescheduleData({...rescheduleData, nextCallDate: e.target.value, daysToAdd: ''})} min={new Date().toISOString().split('T')[0]} /></Form.Group>
+          <Form.Group><Form.Label className="fdash-form-label">Reason</Form.Label><Form.Control className="fdash-input" as="textarea" rows={2} value={rescheduleData.reason} onChange={(e) => setRescheduleData({...rescheduleData, reason: e.target.value})} /></Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowRescheduleModal(false)}>Cancel</Button>
-          <Button variant="primary" onClick={handleReschedule} disabled={rescheduleLoading}>Confirm</Button>
+          <button className="fdash-btn fdash-btn-outline" onClick={() => setShowRescheduleModal(false)}>Cancel</button>
+          <button className="fdash-btn fdash-btn-solid" onClick={handleReschedule} disabled={rescheduleLoading}>Confirm</button>
         </Modal.Footer>
       </Modal>
 
@@ -378,7 +419,119 @@ function Followups() {
 
       {/* Delete Modal */}
       <ConfirmationModal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} onConfirm={handleDelete} title="Delete" message="Delete this follow-up?" confirmText="Delete" variant="danger" />
+
+      <FollowupsStyles />
     </div>
+  );
+}
+
+function FollowupsStyles() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+      .fdash {
+        --ink: #12182B;
+        --muted: #6B7280;
+        --canvas: #F1F3F8;
+        --surface: #FFFFFF;
+        --line: #E2E5EE;
+        --indigo: #4453D8;
+        --teal: #17A589;
+        --amber: #E08E1D;
+        --coral: #E14B3D;
+        font-family: 'Inter', sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        padding: 28px;
+        border-radius: 16px;
+      }
+      .fdash-loading { text-align: center; padding: 80px 0; color: #6B7280; font-family: 'Inter', sans-serif; }
+      .fdash-spinner { width: 32px; height: 32px; margin: 0 auto; border: 3px solid #E2E5EE; border-top-color: #4453D8; border-radius: 50%; animation: fdash-spin 0.8s linear infinite; }
+      @keyframes fdash-spin { to { transform: rotate(360deg); } }
+
+      .fdash-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+      .fdash-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--indigo); }
+      .fdash-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; margin: 4px 0 0; }
+      .fdash-mono { font-family: 'IBM Plex Mono', monospace; }
+
+      .fdash-btn { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13px; border-radius: 9px; padding: 9px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s ease; border: none; }
+      .fdash-btn-outline { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+      .fdash-btn-outline:hover { border-color: var(--indigo); color: var(--indigo); }
+      .fdash-btn-solid { background: var(--indigo); color: #fff; }
+      .fdash-btn-solid:hover { opacity: 0.9; }
+
+      .fdash-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+      @media (max-width: 900px) { .fdash-stat-strip { grid-template-columns: repeat(2, 1fr); } }
+      .fdash-stat-tile { background: var(--surface); border-radius: 14px; padding: 16px 18px; border-left: 4px solid var(--tile-accent); box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+      .fdash-stat-top { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+      .fdash-stat-icon { color: var(--tile-accent); font-size: 16px; opacity: 0.7; }
+      .fdash-stat-value { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; }
+      .fdash-stat-value-sm { font-size: 19px; }
+      .fdash-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 6px; }
+
+      .fdash-search { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; max-width: 360px; margin-bottom: 18px; }
+      .fdash-search-icon { color: var(--muted); font-size: 13px; }
+      .fdash-search-input { border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 13px; flex: 1; background: transparent; color: var(--ink); }
+
+      .fdash-tabs.nav-tabs { border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+      .fdash-tabs .nav-link { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); border: none; padding: 10px 4px; margin-right: 22px; }
+      .fdash-tabs .nav-link.active { color: var(--indigo); background: transparent; border-bottom: 2px solid var(--indigo); }
+
+      .fdash-panel { background: var(--surface); border-radius: 14px; box-shadow: 0 1px 2px rgba(18,24,43,0.04); }
+      .fdash-table-panel { overflow: hidden; padding: 0; }
+
+      .fdash-table { font-family: 'Inter', sans-serif; font-size: 13px; }
+      .fdash-table thead th { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding: 14px 16px; background: var(--canvas); }
+      .fdash-table tbody td { padding: 14px 16px; vertical-align: middle; border-bottom: 1px solid var(--line); }
+      .fdash-table tbody tr:last-child td { border-bottom: none; }
+      .fdash-row-overdue { background: rgba(225,75,61,0.04); }
+      .fdash-table-note { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+      .fdash-table-date { display: flex; align-items: center; gap: 7px; color: var(--ink); }
+      .fdash-table-date svg { color: var(--muted); font-size: 12px; }
+
+      .fdash-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px; display: inline-block; }
+
+      .fdash-progress-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; color: var(--muted); }
+      .fdash-track-bar-bg { background: var(--canvas); border-radius: 6px; height: 6px; overflow: hidden; }
+      .fdash-track-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+
+      .fdash-icon-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      .fdash-icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: #fff; transition: opacity 0.15s ease; }
+      .fdash-icon-btn:hover { opacity: 0.85; }
+      .fdash-icon-btn-wa { background: #25D366; }
+      .fdash-icon-btn-teal { background: var(--teal); }
+      .fdash-icon-btn-amber { background: var(--amber); }
+      .fdash-icon-btn-indigo { background: var(--indigo); }
+      .fdash-icon-btn-coral { background: var(--coral); }
+
+      /* Modals */
+      .fdash-modal .modal-content { border-radius: 16px; border: none; font-family: 'Inter', sans-serif; }
+      .fdash-modal .modal-header, .fdash-modal .modal-footer { border-color: var(--line, #E2E5EE); }
+      .fdash-modal-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+      .fdash-modal-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #6B7280); font-weight: 600; margin-bottom: 10px; }
+      .fdash-modal-divider { border-top: 1px solid var(--line, #E2E5EE); margin: 18px 0; }
+      .fdash-modal-note { font-size: 13px; color: var(--muted, #6B7280); }
+      .fdash-form-label { font-size: 12.5px; font-weight: 500; color: var(--ink, #12182B); }
+      .fdash-input { border-radius: 9px; border: 1px solid var(--line, #E2E5EE); font-size: 13px; padding: 9px 12px; }
+      .fdash-input:focus { border-color: var(--indigo, #4453D8); box-shadow: 0 0 0 3px rgba(68,83,216,0.12); }
+
+      .fdash-package-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      @media (max-width: 700px) { .fdash-package-grid { grid-template-columns: repeat(2, 1fr); } }
+      .fdash-package-card { position: relative; border: 1.5px solid var(--line, #E2E5EE); border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.15s ease; }
+      .fdash-package-card:hover { border-color: var(--pkg-accent); }
+      .fdash-package-card.is-active { border-color: var(--pkg-accent); background: color-mix(in srgb, var(--pkg-accent) 8%, white); }
+      .fdash-package-flag { position: absolute; top: -9px; right: 8px; background: var(--pkg-accent); color: #fff; font-size: 9px; font-family: 'IBM Plex Mono', monospace; padding: 2px 7px; border-radius: 20px; }
+      .fdash-package-icon { color: var(--pkg-accent); font-size: 20px; margin-bottom: 6px; }
+      .fdash-package-name { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 11.5px; }
+      .fdash-package-price { font-size: 12px; color: var(--pkg-accent); font-weight: 600; margin-top: 4px; }
+      .fdash-package-accounts { font-size: 10.5px; color: var(--muted, #6B7280); margin-top: 2px; }
+      .fdash-package-check { color: var(--pkg-accent); position: absolute; bottom: 8px; right: 8px; font-size: 12px; }
+
+      .fdash-package-pick { width: 100%; text-align: left; background: var(--surface, #fff); border: 1.5px solid var(--line, #E2E5EE); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; transition: border-color 0.15s ease; }
+      .fdash-package-pick:hover { border-color: var(--pkg-accent); }
+      .fdash-package-pick span { color: var(--pkg-accent); font-size: 12px; }
+    `}</style>
   );
 }
 
